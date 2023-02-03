@@ -1,15 +1,17 @@
 package main
 
 import (
-	"fmt"
-
-	"github.com/edwardOWO/goexample/hello"
-	"github.com/edwardOWO/goexample/src/im"
+	"github.com/edwardOWO/goexample/msg"
+	_ "github.com/edwardOWO/goexample/msg"
 )
 
 func main() {
-	fmt.Println("Hi")
-	hello.Hi2()
-	im.Hi()
+
+	msg2 := msg.NewMessage()
+	msg2.SentMessage("test")
+	msg2.SentMessage("2")
+
+	msg3 := msg.NewMessage()
+	msg3.SentMessage("2")
 
 }
