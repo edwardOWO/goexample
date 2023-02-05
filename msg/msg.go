@@ -7,6 +7,7 @@ var count int64 = 0
 type msg struct {
 	id      int64
 	content string
+	Data    string
 }
 
 func NewMessage() *msg {
