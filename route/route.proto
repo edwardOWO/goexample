@@ -1,0 +1,28 @@
+// protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative route.proto
+// route.proto
+/* 指定使用的是 proto3 的語法 */
+syntax = 'proto3';
+
+option go_package = "github.com/edwardOWO/goexample/route";
+
+/* option 不會改變聲明的整體含義，但可能會影響它在特定上下文中的處理方式 */
+
+package route;
+
+/* 定義要回傳的 message 類型，我們想回傳的是一個位置情報 */
+/* 座標訊息 */
+message Point {
+    int32 latitude = 1; // 把一個數字作為key使用，可以壓縮長度。要從 1 開始。
+    int32 longitude = 2;
+}
+/* 相關訊息 */
+message Feature {
+    string name = 1;
+    Point location = 2;
+}
+
+// route.proto
+service RouteGuide {
+  // Unary
+  rpc GetFeature(Point) returns (Feature) {}
+}
