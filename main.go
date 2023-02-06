@@ -1,37 +1,64 @@
 package main
 
 import (
+	"log"
+	"net"
+
 	_ "github.com/edwardOWO/goexample/learn"
-	"github.com/edwardOWO/goexample/member"
 	_ "github.com/edwardOWO/goexample/msg"
+	"github.com/edwardOWO/goexample/server"
+	_ "github.com/edwardOWO/goexample/server"
+	"google.golang.org/grpc"
+	_ "google.golang.org/grpc"
+
+	pb "github.com/edwardOWO/goexample/route"
+
+	_ "github.com/edwardOWO/goexample/route"
 )
 
 func main() {
 
-	//msg2 := msg.NewMessage()
-	//test := *(msg2)
-	//fmt.Printf(test.Data)
-
-	//msg2.Data = "123"
-
-	//learn.GetReflect(*msg2)
-
+	// 生成一個listener
 	/*
-		fmt.Println(t)
+		listener, err := net.Listen("tcp", "localhost:5000")
+		if err != nil {
+			log.Fatalln("cannot create a listener a the address")
+		}
+		// server
+		grpcServer := grpc.NewServer()
+		pb.RegisterRouteGuideServer(grpcServer, server.DbServer())
 
-		msg2.SentMessage("test")
-		msg2.SentMessage("2")
+		log.Fatalln(grpcServer.Serve(listener))
+	*/
+	println("gRPC server tutorial in Go")
 
-		msg3 := msg.NewMessage()
-		msg3.SentMessage("2")
+	// simple
+	/*
+		listener, err := net.Listen("tcp", ":9000")
+		if err != nil {
+			panic(err)
+		}
+
+		s := grpc.NewServer()
+
+		pb.RegisterGetTimeServer(s, &server.Server{})
+		if err := s.Serve(listener); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
 	*/
 
-	//var test int = 10
+	// stream rpc
 
-	//learn.PrintValue(test)
+	listener, err := net.Listen("tcp", ":9000")
+	if err != nil {
+		panic(err)
+	}
 
-	//go run main.go --members="192.168.1.104:40001,192.168.1.104:40002" --port=4002 --p=40002
+	s := grpc.NewServer()
 
-	//172.17.0.3
-	member.Main()
+	pb.RegisterStreamServiceServer(s, server.Server2{})
+	if err := s.Serve(listener); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
+
 }

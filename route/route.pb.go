@@ -139,6 +139,198 @@ func (x *Feature) GetLocation() *Point {
 	return nil
 }
 
+// Simple RPC
+// =========================================================
+// The request message containing the user's name.
+type TimeRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Timezone int64 `protobuf:"varint,1,opt,name=timezone,proto3" json:"timezone,omitempty"`
+}
+
+func (x *TimeRequest) Reset() {
+	*x = TimeRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_route_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TimeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TimeRequest) ProtoMessage() {}
+
+func (x *TimeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_route_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TimeRequest.ProtoReflect.Descriptor instead.
+func (*TimeRequest) Descriptor() ([]byte, []int) {
+	return file_route_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *TimeRequest) GetTimezone() int64 {
+	if x != nil {
+		return x.Timezone
+	}
+	return 0
+}
+
+// The response message containing the greetings
+type TimeReply struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Timestamp int64 `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+}
+
+func (x *TimeReply) Reset() {
+	*x = TimeReply{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_route_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TimeReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TimeReply) ProtoMessage() {}
+
+func (x *TimeReply) ProtoReflect() protoreflect.Message {
+	mi := &file_route_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TimeReply.ProtoReflect.Descriptor instead.
+func (*TimeReply) Descriptor() ([]byte, []int) {
+	return file_route_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *TimeReply) GetTimestamp() int64 {
+	if x != nil {
+		return x.Timestamp
+	}
+	return 0
+}
+
+type StreamRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id int32 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (x *StreamRequest) Reset() {
+	*x = StreamRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_route_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *StreamRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StreamRequest) ProtoMessage() {}
+
+func (x *StreamRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_route_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StreamRequest.ProtoReflect.Descriptor instead.
+func (*StreamRequest) Descriptor() ([]byte, []int) {
+	return file_route_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *StreamRequest) GetId() int32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+type StreamResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Result string `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
+}
+
+func (x *StreamResponse) Reset() {
+	*x = StreamResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_route_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *StreamResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StreamResponse) ProtoMessage() {}
+
+func (x *StreamResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_route_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StreamResponse.ProtoReflect.Descriptor instead.
+func (*StreamResponse) Descriptor() ([]byte, []int) {
+	return file_route_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *StreamResponse) GetResult() string {
+	if x != nil {
+		return x.Result
+	}
+	return ""
+}
+
 var File_route_proto protoreflect.FileDescriptor
 
 var file_route_proto_rawDesc = []byte{
@@ -152,13 +344,32 @@ var file_route_proto_rawDesc = []byte{
 	0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x28, 0x0a, 0x08, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69,
 	0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0c, 0x2e, 0x72, 0x6f, 0x75, 0x74, 0x65,
 	0x2e, 0x50, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x08, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e,
-	0x32, 0x3a, 0x0a, 0x0a, 0x52, 0x6f, 0x75, 0x74, 0x65, 0x47, 0x75, 0x69, 0x64, 0x65, 0x12, 0x2c,
-	0x0a, 0x0a, 0x47, 0x65, 0x74, 0x46, 0x65, 0x61, 0x74, 0x75, 0x72, 0x65, 0x12, 0x0c, 0x2e, 0x72,
-	0x6f, 0x75, 0x74, 0x65, 0x2e, 0x50, 0x6f, 0x69, 0x6e, 0x74, 0x1a, 0x0e, 0x2e, 0x72, 0x6f, 0x75,
-	0x74, 0x65, 0x2e, 0x46, 0x65, 0x61, 0x74, 0x75, 0x72, 0x65, 0x22, 0x00, 0x42, 0x26, 0x5a, 0x24,
-	0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x65, 0x64, 0x77, 0x61, 0x72,
-	0x64, 0x4f, 0x57, 0x4f, 0x2f, 0x67, 0x6f, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x2f, 0x72,
-	0x6f, 0x75, 0x74, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x22, 0x29, 0x0a, 0x0b, 0x54, 0x69, 0x6d, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12,
+	0x1a, 0x0a, 0x08, 0x74, 0x69, 0x6d, 0x65, 0x7a, 0x6f, 0x6e, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x03, 0x52, 0x08, 0x74, 0x69, 0x6d, 0x65, 0x7a, 0x6f, 0x6e, 0x65, 0x22, 0x29, 0x0a, 0x09, 0x54,
+	0x69, 0x6d, 0x65, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x12, 0x1c, 0x0a, 0x09, 0x74, 0x69, 0x6d, 0x65,
+	0x73, 0x74, 0x61, 0x6d, 0x70, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x09, 0x74, 0x69, 0x6d,
+	0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x22, 0x1f, 0x0a, 0x0d, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x05, 0x52, 0x02, 0x69, 0x64, 0x22, 0x28, 0x0a, 0x0e, 0x53, 0x74, 0x72, 0x65, 0x61,
+	0x6d, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x72, 0x65, 0x73,
+	0x75, 0x6c, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c,
+	0x74, 0x32, 0x3a, 0x0a, 0x0a, 0x52, 0x6f, 0x75, 0x74, 0x65, 0x47, 0x75, 0x69, 0x64, 0x65, 0x12,
+	0x2c, 0x0a, 0x0a, 0x47, 0x65, 0x74, 0x46, 0x65, 0x61, 0x74, 0x75, 0x72, 0x65, 0x12, 0x0c, 0x2e,
+	0x72, 0x6f, 0x75, 0x74, 0x65, 0x2e, 0x50, 0x6f, 0x69, 0x6e, 0x74, 0x1a, 0x0e, 0x2e, 0x72, 0x6f,
+	0x75, 0x74, 0x65, 0x2e, 0x46, 0x65, 0x61, 0x74, 0x75, 0x72, 0x65, 0x22, 0x00, 0x32, 0x3c, 0x0a,
+	0x07, 0x47, 0x65, 0x74, 0x54, 0x69, 0x6d, 0x65, 0x12, 0x31, 0x0a, 0x07, 0x47, 0x65, 0x74, 0x54,
+	0x69, 0x6d, 0x65, 0x12, 0x12, 0x2e, 0x72, 0x6f, 0x75, 0x74, 0x65, 0x2e, 0x54, 0x69, 0x6d, 0x65,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x10, 0x2e, 0x72, 0x6f, 0x75, 0x74, 0x65, 0x2e,
+	0x54, 0x69, 0x6d, 0x65, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x22, 0x00, 0x32, 0x51, 0x0a, 0x0d, 0x53,
+	0x74, 0x72, 0x65, 0x61, 0x6d, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x40, 0x0a, 0x0d,
+	0x46, 0x65, 0x74, 0x63, 0x68, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x14, 0x2e,
+	0x72, 0x6f, 0x75, 0x74, 0x65, 0x2e, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x15, 0x2e, 0x72, 0x6f, 0x75, 0x74, 0x65, 0x2e, 0x53, 0x74, 0x72, 0x65,
+	0x61, 0x6d, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x30, 0x01, 0x42, 0x26,
+	0x5a, 0x24, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x65, 0x64, 0x77,
+	0x61, 0x72, 0x64, 0x4f, 0x57, 0x4f, 0x2f, 0x67, 0x6f, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65,
+	0x2f, 0x72, 0x6f, 0x75, 0x74, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -173,17 +384,25 @@ func file_route_proto_rawDescGZIP() []byte {
 	return file_route_proto_rawDescData
 }
 
-var file_route_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_route_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_route_proto_goTypes = []interface{}{
-	(*Point)(nil),   // 0: route.Point
-	(*Feature)(nil), // 1: route.Feature
+	(*Point)(nil),          // 0: route.Point
+	(*Feature)(nil),        // 1: route.Feature
+	(*TimeRequest)(nil),    // 2: route.TimeRequest
+	(*TimeReply)(nil),      // 3: route.TimeReply
+	(*StreamRequest)(nil),  // 4: route.StreamRequest
+	(*StreamResponse)(nil), // 5: route.StreamResponse
 }
 var file_route_proto_depIdxs = []int32{
 	0, // 0: route.Feature.location:type_name -> route.Point
 	0, // 1: route.RouteGuide.GetFeature:input_type -> route.Point
-	1, // 2: route.RouteGuide.GetFeature:output_type -> route.Feature
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
+	2, // 2: route.GetTime.GetTime:input_type -> route.TimeRequest
+	4, // 3: route.StreamService.FetchResponse:input_type -> route.StreamRequest
+	1, // 4: route.RouteGuide.GetFeature:output_type -> route.Feature
+	3, // 5: route.GetTime.GetTime:output_type -> route.TimeReply
+	5, // 6: route.StreamService.FetchResponse:output_type -> route.StreamResponse
+	4, // [4:7] is the sub-list for method output_type
+	1, // [1:4] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -219,6 +438,54 @@ func file_route_proto_init() {
 				return nil
 			}
 		}
+		file_route_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TimeRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_route_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TimeReply); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_route_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*StreamRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_route_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*StreamResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -226,9 +493,9 @@ func file_route_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_route_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   6,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   3,
 		},
 		GoTypes:           file_route_proto_goTypes,
 		DependencyIndexes: file_route_proto_depIdxs,
