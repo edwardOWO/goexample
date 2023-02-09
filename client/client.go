@@ -17,7 +17,7 @@ import (
 
 func main() {
 
-	ServerSide()
+	Bidirectional()
 }
 
 func SimpleGrpcClient() {
@@ -138,4 +138,35 @@ func ServerSide() {
 		// 打印返回值
 		log.Println(res.Result)
 	}
+}
+func Bidirectional() {
+	conn, err := grpc.Dial(":9000", grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("net.Connect err: %v", err)
+	}
+	defer conn.Close()
+	// 建立gRPC连接
+	grpcClient := pb.NewBidirectionalClient(conn)
+	//获取流信息
+	stream, err := grpcClient.BidirectionalHello(context.Background())
+	if err != nil {
+		log.Fatalf("get BidirectionalHello stream err: %v", err)
+	}
+
+	for n := 0; n < 1000000; n++ {
+		err := stream.Send(&pb.BidirectionalRequest{Id: 1})
+		if err != nil {
+			log.Fatalf("stream request err: %v", err)
+		}
+		res, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("Conversations get stream err: %v", err)
+		}
+		// 打印返回值
+		log.Println(res.Result)
+	}
+
 }
