@@ -49,6 +49,24 @@ func main() {
 
 	// stream rpc
 
+	/*
+		listener, err := net.Listen("tcp", ":9000")
+		if err != nil {
+			panic(err)
+		}
+
+		s := grpc.NewServer()
+
+		pb.RegisterStreamServiceServer(s, server.StreamGRPC{})
+		if err := s.Serve(listener); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+	*/
+
+	ServerSideStreamGrpc()
+
+}
+func ClientSideStreamGrpc() {
 	listener, err := net.Listen("tcp", ":9000")
 	if err != nil {
 		panic(err)
@@ -56,9 +74,24 @@ func main() {
 
 	s := grpc.NewServer()
 
-	pb.RegisterStreamServiceServer(s, server.Server2{})
+	pb.RegisterClientSideServer(s, &server.ClientSideService{})
+
+	//pb.RegisterStreamClientServer(s, server.StreamClient{})
 	if err := s.Serve(listener); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
+}
+func ServerSideStreamGrpc() {
+	listener, err := net.Listen("tcp", ":9000")
+	if err != nil {
+		panic(err)
+	}
 
+	s := grpc.NewServer()
+
+	pb.RegisterServerSideServer(s, &server.ServerSideService{})
+
+	if err := s.Serve(listener); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
 }

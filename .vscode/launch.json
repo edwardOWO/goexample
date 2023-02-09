@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${fileDirname}",
-            "args": ["--port=4090"]
+            "args": ["--port=4001","-p=40001","--members=127.0.0.1:40001,127.0.0.1:40002"]
         }
     ]
 }

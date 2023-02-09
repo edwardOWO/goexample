@@ -57,3 +57,48 @@ message StreamRequest {
 message StreamResponse {
   string result = 1;
 }
+
+
+
+// Client-side streaming RPC
+service ClientSide {
+  //一个ClientSideHello的方法
+  rpc ClientSideHello (stream ClientSideRequest) returns (ClientSideResp) {}
+}
+
+message ClientSideRequest  {
+  int32 id = 1;
+}
+
+message ClientSideResp {
+  string result = 1;
+}
+
+// Server-side streaming RPC
+service ServerSide {
+
+  rpc ServerSideHello (ServerSideRequest) returns (stream ServerSideResp) {}
+}
+
+message ServerSideRequest  {
+  int32 id = 1;
+}
+
+message ServerSideResp {
+  string result = 1;
+}
+
+
+// Bidirectional streaming RPC
+
+service Bidirectional {
+  rpc BidirectionalHello (stream BidirectionalRequest) returns (stream BidirectionalResp) {}
+}
+message BidirectionalRequest  {
+  int32 id = 1;
+}
+
+message BidirectionalResp {
+  string result = 1;
+}
+

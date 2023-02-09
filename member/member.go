@@ -1,4 +1,4 @@
-package member
+package main
 
 import (
 	"encoding/json"
@@ -230,7 +230,7 @@ func start() error {
 	return nil
 }
 
-func Main() {
+func main() {
 	if err := start(); err != nil {
 		fmt.Println(err)
 	}

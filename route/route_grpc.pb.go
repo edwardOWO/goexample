@@ -306,3 +306,238 @@ var StreamService_ServiceDesc = grpc.ServiceDesc{
 	},
 	Metadata: "route.proto",
 }
+
+// ClientSideClient is the client API for ClientSide service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type ClientSideClient interface {
+	// 一个ClientSideHello的方法
+	ClientSideHello(ctx context.Context, opts ...grpc.CallOption) (ClientSide_ClientSideHelloClient, error)
+}
+
+type clientSideClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewClientSideClient(cc grpc.ClientConnInterface) ClientSideClient {
+	return &clientSideClient{cc}
+}
+
+func (c *clientSideClient) ClientSideHello(ctx context.Context, opts ...grpc.CallOption) (ClientSide_ClientSideHelloClient, error) {
+	stream, err := c.cc.NewStream(ctx, &ClientSide_ServiceDesc.Streams[0], "/route.ClientSide/ClientSideHello", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &clientSideClientSideHelloClient{stream}
+	return x, nil
+}
+
+type ClientSide_ClientSideHelloClient interface {
+	Send(*ClientSideRequest) error
+	CloseAndRecv() (*ClientSideResp, error)
+	grpc.ClientStream
+}
+
+type clientSideClientSideHelloClient struct {
+	grpc.ClientStream
+}
+
+func (x *clientSideClientSideHelloClient) Send(m *ClientSideRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *clientSideClientSideHelloClient) CloseAndRecv() (*ClientSideResp, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(ClientSideResp)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// ClientSideServer is the server API for ClientSide service.
+// All implementations must embed UnimplementedClientSideServer
+// for forward compatibility
+type ClientSideServer interface {
+	// 一个ClientSideHello的方法
+	ClientSideHello(ClientSide_ClientSideHelloServer) error
+	mustEmbedUnimplementedClientSideServer()
+}
+
+// UnimplementedClientSideServer must be embedded to have forward compatible implementations.
+type UnimplementedClientSideServer struct {
+}
+
+func (UnimplementedClientSideServer) ClientSideHello(ClientSide_ClientSideHelloServer) error {
+	return status.Errorf(codes.Unimplemented, "method ClientSideHello not implemented")
+}
+func (UnimplementedClientSideServer) mustEmbedUnimplementedClientSideServer() {}
+
+// UnsafeClientSideServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ClientSideServer will
+// result in compilation errors.
+type UnsafeClientSideServer interface {
+	mustEmbedUnimplementedClientSideServer()
+}
+
+func RegisterClientSideServer(s grpc.ServiceRegistrar, srv ClientSideServer) {
+	s.RegisterService(&ClientSide_ServiceDesc, srv)
+}
+
+func _ClientSide_ClientSideHello_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ClientSideServer).ClientSideHello(&clientSideClientSideHelloServer{stream})
+}
+
+type ClientSide_ClientSideHelloServer interface {
+	SendAndClose(*ClientSideResp) error
+	Recv() (*ClientSideRequest, error)
+	grpc.ServerStream
+}
+
+type clientSideClientSideHelloServer struct {
+	grpc.ServerStream
+}
+
+func (x *clientSideClientSideHelloServer) SendAndClose(m *ClientSideResp) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *clientSideClientSideHelloServer) Recv() (*ClientSideRequest, error) {
+	m := new(ClientSideRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// ClientSide_ServiceDesc is the grpc.ServiceDesc for ClientSide service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var ClientSide_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "route.ClientSide",
+	HandlerType: (*ClientSideServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "ClientSideHello",
+			Handler:       _ClientSide_ClientSideHello_Handler,
+			ClientStreams: true,
+		},
+	},
+	Metadata: "route.proto",
+}
+
+// ServerSideClient is the client API for ServerSide service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type ServerSideClient interface {
+	ServerSideHello(ctx context.Context, in *ServerSideRequest, opts ...grpc.CallOption) (ServerSide_ServerSideHelloClient, error)
+}
+
+type serverSideClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewServerSideClient(cc grpc.ClientConnInterface) ServerSideClient {
+	return &serverSideClient{cc}
+}
+
+func (c *serverSideClient) ServerSideHello(ctx context.Context, in *ServerSideRequest, opts ...grpc.CallOption) (ServerSide_ServerSideHelloClient, error) {
+	stream, err := c.cc.NewStream(ctx, &ServerSide_ServiceDesc.Streams[0], "/route.ServerSide/ServerSideHello", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &serverSideServerSideHelloClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type ServerSide_ServerSideHelloClient interface {
+	Recv() (*ServerSideResp, error)
+	grpc.ClientStream
+}
+
+type serverSideServerSideHelloClient struct {
+	grpc.ClientStream
+}
+
+func (x *serverSideServerSideHelloClient) Recv() (*ServerSideResp, error) {
+	m := new(ServerSideResp)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// ServerSideServer is the server API for ServerSide service.
+// All implementations must embed UnimplementedServerSideServer
+// for forward compatibility
+type ServerSideServer interface {
+	ServerSideHello(*ServerSideRequest, ServerSide_ServerSideHelloServer) error
+	mustEmbedUnimplementedServerSideServer()
+}
+
+// UnimplementedServerSideServer must be embedded to have forward compatible implementations.
+type UnimplementedServerSideServer struct {
+}
+
+func (UnimplementedServerSideServer) ServerSideHello(*ServerSideRequest, ServerSide_ServerSideHelloServer) error {
+	return status.Errorf(codes.Unimplemented, "method ServerSideHello not implemented")
+}
+func (UnimplementedServerSideServer) mustEmbedUnimplementedServerSideServer() {}
+
+// UnsafeServerSideServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ServerSideServer will
+// result in compilation errors.
+type UnsafeServerSideServer interface {
+	mustEmbedUnimplementedServerSideServer()
+}
+
+func RegisterServerSideServer(s grpc.ServiceRegistrar, srv ServerSideServer) {
+	s.RegisterService(&ServerSide_ServiceDesc, srv)
+}
+
+func _ServerSide_ServerSideHello_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ServerSideRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ServerSideServer).ServerSideHello(m, &serverSideServerSideHelloServer{stream})
+}
+
+type ServerSide_ServerSideHelloServer interface {
+	Send(*ServerSideResp) error
+	grpc.ServerStream
+}
+
+type serverSideServerSideHelloServer struct {
+	grpc.ServerStream
+}
+
+func (x *serverSideServerSideHelloServer) Send(m *ServerSideResp) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+// ServerSide_ServiceDesc is the grpc.ServiceDesc for ServerSide service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var ServerSide_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "route.ServerSide",
+	HandlerType: (*ServerSideServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "ServerSideHello",
+			Handler:       _ServerSide_ServerSideHello_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "route.proto",
+}
