@@ -5,55 +5,56 @@ import (
 	"log"
 	"os"
 
+	"github.com/edwardOWO/goexample"
+
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/kube"
 )
 
 func main() {
+
+	utils.PrintMessage("Hello, Go!")
+	result := utils.AddNumbers(5, 3)
+	fmt.Println("Result of addition:", result)
+
 	// 配置 kubeconfig 路徑
 	kubeconfig := `/home/coder/goexample/test.config`
-	releaseName := "haproxy"                // 替換為你想查詢歷史記錄的 Release 名稱
-	namespace := "default"       // 替換為 Release 所在的命名空間
-
-	// 檢查 kubeconfig 文件是否存在
+	// 检查 kubeconfig 文件是否存在
 	if _, err := os.Stat(kubeconfig); os.IsNotExist(err) {
-		log.Fatalf("kubeconfig 文件不存在: %v", kubeconfig)
+		log.Fatalf("kubeconfig 文件不存在: %v", err)
 	}
 
-	// 初始化 Helm 的 CLI 設定
+	// 初始化 Helm CLI 设置
 	settings := cli.New()
 	settings.KubeConfig = kubeconfig
-	settings.SetNamespace(namespace)
 
-	// 初始化 Action Configuration
+	// 初始化 Helm Action 配置
 	actionConfig := new(action.Configuration)
-	clientGetter := kube.GetConfig(settings.KubeConfig, "", settings.Namespace())
-	err := actionConfig.Init(clientGetter, settings.Namespace(), os.Getenv("HELM_DRIVER"), log.Printf)
+	clientGetter := kube.GetConfig(settings.KubeConfig, "", settings.Namespace()) // 指定 default 命名空间
+	err := actionConfig.Init(clientGetter, "", os.Getenv("HELM_DRIVER"), log.Printf)
 	if err != nil {
-		log.Fatalf("無法初始化 Helm 設定: %v", err)
+		log.Fatalf("无法初始化 Helm 配置: %v", err)
 	}
 
-	// 創建 History 動作
-	historyClient := action.NewHistory(actionConfig)
+	// 创建 List Client
+	listClient := action.NewList(actionConfig)
+	//listClient.Deployed = true // 仅查询已部署的 Releases
+	listClient.AllNamespaces = true
 
-	// 獲取 Release 的歷史記錄
-	histories, err := historyClient.Run(releaseName)
+	// 查询 Releases
+	releases, err := listClient.Run()
 	if err != nil {
-		log.Fatalf("無法取得 Release 的歷史記錄: %v", err)
+		log.Fatalf("无法获取 Releases 列表: %v", err)
 	}
 
-	// 輸出歷史記錄
-	fmt.Printf("Release '%s' 的歷史記錄:\n", releaseName)
-	if len(histories) == 0 {
-		fmt.Println("無歷史記錄")
+	// 输出结果
+	fmt.Println("Default 命名空间中的已部署 Releases:")
+	if len(releases) == 0 {
+		fmt.Println("没有找到已部署的 Release")
 	} else {
-		for _, history := range histories {
-			fmt.Printf("- 修訂版本: %d, 狀態: %s, 更新時間: %s\n",
-				history.Version,
-				history.Info.Status,
-				history.Info.LastDeployed,
-			)
+		for _, r := range releases {
+			fmt.Printf("- 名称: %s, 状态: %s\n", r.Name, r.Info.Status)
 		}
 	}
 }
