@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload Test</title>
+</head>
+<body>
+    <h1>helm 維運介面測試</h1>
+    
+    <fieldset>
+        <legend>Upload Kube Config</legend>
+        <form id="uploadForm">
+            <input type="file" id="file" name="file" required>
+            <br><br>
+            <button type="button" onclick="uploadFile()">Upload File</button>
+        </form>
+
+        <div id="response" style="margin-top: 20px;">
+            <h3>Response:</h3>
+            <pre id="responseData"></pre>
+        </div>
+    </fieldset>
+    
+    <fieldset style="margin-top: 20px;">
+        <legend>Get Releases</legend>
+        <form id="releaseForm">
+            <button type="button" onclick="listRelease()">GetRelease</button>
+        </form>
+
+        <div id="response" style="margin-top: 20px;">
+            <h3>Response:</h3>
+            <pre id="listReleaseResult"></pre>
+        </div>
+    </fieldset>
+
+    <fieldset style="margin-top: 20px;">
+        <legend>Get Pods</legend>
+        <form id="podForm">
+            <button type="button" onclick="listPods()">GetRelease</button>
+        </form>
+
+        <div id="response" style="margin-top: 20px;">
+            <h3>Response:</h3>
+            <pre id="listPods"></pre>
+        </div>
+    </fieldset>
+
+    <fieldset style="margin-top: 20px;">
+        <legend>Upload Release</legend>
+        <form id="uploadForm">
+            <input type="file" id="fileRelease" name="file" required>
+            <br><br>
+            <button type="button" onclick="uploadRelease()">Upload File</button>
+        </form>
+
+        <div id="response" style="margin-top: 20px;">
+            <h3>Response:</h3>
+            <pre id="responseRelease"></pre>
+        </div>
+    </fieldset>
+
+    <script>
+        async function uploadFile() {
+            const fileInput = document.getElementById('file');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select a file to upload.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/vscode/proxy/9527/uploadConfig', {
+                    method: 'PUT',
+                    body: formData
+                });
+
+                const data = await response.json();
+                document.getElementById('responseData').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('responseData').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function listRelease() {
+            try {
+                const response = await fetch('/vscode/proxy/9527/listRelease', {
+                    method: 'GET'
+                });
+
+                const data = await response.json();
+                document.getElementById('listReleaseResult').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('listReleaseResult').textContent = `Error: ${error.message}`;
+            }
+        }
+
+
+        async function listPods() {
+            try {
+                const response = await fetch('/vscode/proxy/9527/listPods', {
+                    method: 'GET'
+                });
+
+                const data = await response.json();
+                document.getElementById('listPods').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('listPods').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function uploadRelease() {
+            const fileInput = document.getElementById('fileRelease');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select a file to upload.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/vscode/proxy/9527/uploadRelease', {
+                    method: 'PUT',
+                    body: formData
+                });
+
+                const data = await response.json();
+                document.getElementById('responseRelease').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('responseRelease').textContent = `Error: ${error.message}`;
+            }
+        }       
+    </script>
+</body>
+</html>
