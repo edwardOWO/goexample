@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
@@ -141,4 +142,20 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 		fmt.Println(string(jsonData))
 	}
 	return podList, nil
+}
+
+func RunHelmDiff(release, chartPath, namespace string, configPath string) (string, error) {
+	// 准备 Helm diff 命令
+	cmd := exec.Command("helm", "diff", "upgrade", release, chartPath, "--namespace", namespace, "--kubeconfig", configPath)
+
+	// 执行命令
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Helm diff 执行失败: %s", string(output))
+		return "", err
+	}
+
+	// 打印输出
+	log.Printf("Helm diff 执行成功: %s", string(output))
+	return string(output), nil
 }

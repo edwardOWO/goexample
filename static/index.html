@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>File Upload Test</title>
+    <style>
+        /* 确保换行时保留格式 */
+        pre {
+            white-space: pre-wrap; /* 允许换行 */
+            word-wrap: break-word; /* 强制长字符串换行 */
+            border: 1px solid #ccc; /* 添加边框便于观察 */
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+    </style>
 </head>
 <body>
     <h1>helm 維運介面測試</h1>
@@ -53,10 +63,23 @@
             <br><br>
             <button type="button" onclick="uploadRelease()">Upload File</button>
         </form>
-
+    
         <div id="response" style="margin-top: 20px;">
             <h3>Response:</h3>
             <pre id="responseRelease"></pre>
+        </div>
+    </fieldset>
+
+    <fieldset style="margin-top: 20px;">
+        <legend>diff Release</legend>
+        <form id="uploadForm">
+            <button type="button" onclick="diffRelease()">diffRelease</button>
+            <button type="button" onclick="clear()">clearRelease</button>
+        </form>
+
+        <div id="response" style="margin-top: 20px;">
+            <h3>Response:</h3>
+            <pre id="diffReleaseResult"></pre>
         </div>
     </fieldset>
 
@@ -114,29 +137,61 @@
         }
 
         async function uploadRelease() {
+        // 获取文件输入框元素
             const fileInput = document.getElementById('fileRelease');
-            const file = fileInput.files[0];
+            const responseReleaseElement = document.getElementById('responseRelease');
 
-            if (!file) {
-                alert('Please select a file to upload.');
+            // 清空旧响应数据
+            responseReleaseElement.textContent = '';
+
+            // 检查是否选择了文件
+            if (!fileInput.files.length) {
+                responseReleaseElement.textContent = 'Please select a file to upload.';
                 return;
             }
 
+            // 创建 FormData 并附加文件
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('file', fileInput.files[0]);
 
             try {
+                // 发送文件到服务器
                 const response = await fetch('/vscode/proxy/9527/uploadRelease', {
                     method: 'PUT',
-                    body: formData
+                    body: formData,
                 });
 
-                const data = await response.json();
-                document.getElementById('responseRelease').textContent = JSON.stringify(data, null, 2);
+                
+
+                // 获取响应文本
+                const data = await response.text();
+
+                const formattedResponse = data.replace(/\\n/g, '<br>');
+
+                // 显示响应内容，支持换行
+                document.getElementById('responseRelease').innerHTML = formattedResponse;
             } catch (error) {
-                document.getElementById('responseRelease').textContent = `Error: ${error.message}`;
+                // 显示错误信息
+                responseReleaseElement.textContent = `Error: ${error.message}`;
             }
-        }       
+        }
+        
+        async function diffRelease() {
+
+            document.getElementById('diffReleaseResult').textContent = '';
+
+
+            try {
+                const response = await fetch('/vscode/proxy/9527/diffRelease', {
+                    method: 'POST',
+                });
+
+                const data = await response.text();
+                document.getElementById('diffReleaseResult').textContent = data;
+            } catch (error) {
+                document.getElementById('diffReleaseResult').textContent = `Error: ${error.message}`;
+            }
+        }
     </script>
 </body>
 </html>
