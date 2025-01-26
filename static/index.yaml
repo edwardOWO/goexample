@@ -1,5 +1,40 @@
 apiVersion: v1
 entries:
+  haproxy:
+  - annotations:
+      category: Infrastructure
+      images: |
+        - name: haproxy
+          image: docker.io/bitnami/haproxy:3.1.2-debian-12-r2
+      licenses: Apache-2.0
+    apiVersion: v2
+    appVersion: 3.1.2
+    created: "2025-01-27T01:42:47.32941355+08:00"
+    dependencies:
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      tags:
+      - bitnami-common
+      version: 2.x.x
+    description: HAProxy is a TCP proxy and a HTTP reverse proxy. It supports SSL
+      termination and offloading, TCP and HTTP normalization, traffic regulation,
+      caching and protection against DDoS attacks.
+    digest: 403c49bd3b7f3d660ba83a49c97c7141d93698a140b913d853d5eabdca599291
+    home: https://bitnami.com
+    icon: https://bitnami.com/assets/stacks/haproxy/img/haproxy-stack-220x234.png
+    keywords:
+    - haproxy
+    - proxy
+    - infrastructure
+    maintainers:
+    - name: Broadcom, Inc. All Rights Reserved.
+      url: https://github.com/bitnami/charts
+    name: haproxy
+    sources:
+    - https://github.com/bitnami/charts/tree/main/bitnami/haproxy
+    urls:
+    - haproxy-2.2.5.tgz
+    version: 2.2.5
   nginx:
   - annotations:
       category: Infrastructure
@@ -13,7 +48,7 @@ entries:
       licenses: Apache-2.0
     apiVersion: v2
     appVersion: 1.27.3
-    created: "2025-01-25T04:01:52.186546706+08:00"
+    created: "2025-01-27T01:42:47.340839964+08:00"
     dependencies:
     - name: common
       repository: oci://registry-1.docker.io/bitnamicharts
@@ -39,6 +74,6 @@ entries:
     sources:
     - https://github.com/bitnami/charts/tree/main/bitnami/nginx
     urls:
-    - https://github.com/edwardOWO/learn/blob/main/nginx-18.3.5.tgz
+    - nginx-18.3.5.tgz
     version: 18.3.5
-generated: "2025-01-25T04:01:52.17627808+08:00"
+generated: "2025-01-27T01:42:47.321903914+08:00"

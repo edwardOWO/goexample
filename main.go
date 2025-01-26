@@ -43,6 +43,8 @@ func main() {
 			return
 		}
 
+		utils.UpdateRepolist()
+
 		// 返回成功訊息
 		c.JSON(http.StatusOK, gin.H{"message": "檔案上傳成功", "path": savePath})
 	})

@@ -10,7 +10,9 @@ import (
 
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/kube"
+	"helm.sh/helm/v3/pkg/repo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -158,4 +160,77 @@ func RunHelmDiff(release, chartPath, namespace string, configPath string) (strin
 	// 打印输出
 	log.Printf("Helm diff 执行成功: %s", string(output))
 	return string(output), nil
+}
+
+func UpdateRepolist() {
+	// 設定 repository 的基本信息
+	repoName := "my-local-repo"
+	repoURL := "http://127.0.0.1:9527/static/"
+
+	entry := &repo.Entry{
+		Name: repoName,
+		URL:  repoURL,
+	}
+
+	// 初始化 Helm 環境設置
+	settings := cli.New()
+
+	// 使用 getter.All 獲取所有可用的 providers
+	providers := getter.All(settings)
+
+	// 使用提供的 providers 創建 repository 實例
+	repository, err := repo.NewChartRepository(entry, providers)
+	if err != nil {
+		log.Fatalf("Failed to create chart repository: %v", err)
+	}
+
+	// 嘗試下載 index 文件
+	_, err = repository.DownloadIndexFile()
+	if err != nil {
+		log.Fatalf("Failed to download index file: %v", err)
+	}
+
+	// 創建 Helm repository 配置文件實例
+	repoFile := repo.NewFile()
+
+	// 添加到 repository 配置中
+	repoFile.Add(entry)
+
+	// Helm 配置文件路徑
+	repoFilePath := settings.RepositoryConfig
+
+	// 寫入配置文件
+	err = repoFile.WriteFile(repoFilePath, 0644)
+	if err != nil {
+		log.Fatalf("Failed to write repository file: %v", err)
+	}
+
+	// 提示信息
+	fmt.Printf("Successfully added repository %s with URL %s\n", repoName, repoURL)
+
+	// 載入現有 repositories 配置文件
+	repositories, err := repo.LoadFile(repoFilePath)
+	if err != nil {
+		log.Fatalf("Failed to load repository file: %v", err)
+	}
+
+	// 列出所有已添加的 repositories
+	fmt.Println("Listing all repositories:")
+	for _, repoEntry := range repositories.Repositories {
+		// 使用 repo.NewChartRepository 創建 repository 實例
+		repository, err := repo.NewChartRepository(repoEntry, providers)
+		if err != nil {
+			log.Fatalf("Failed to create chart repository for %s: %v", repoEntry.Name, err)
+		}
+
+		fmt.Printf("Name: %s, URL: %s\n", repoEntry.Name, repoEntry.URL)
+
+		// 下載 repository 的索引文件
+		_, err = repository.DownloadIndexFile()
+		if err != nil {
+			log.Fatalf("Failed to download index for repository %s: %v", repoEntry.Name, err)
+		} else {
+			fmt.Printf("Repository %s updated successfully.\n", repoEntry.Name)
+		}
+	}
 }
