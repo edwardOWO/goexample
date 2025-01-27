@@ -103,9 +103,9 @@
                             <thead>
                                 <tr>
                                     <th>Name</th>
-                                    <th>Status</th>
-                                    <th>App Version</th>
-                                    <th>Version</th>
+                                    <th>ChartVersion</th>
+                                    <th>AppVersion</th>
+                                    <th>Description</th>
                                 </tr>
                             </thead>
                             <tbody id="listRepoResult"></tbody>
@@ -214,7 +214,7 @@
                     row.innerHTML = `
                         <td>${pod.name}</td>
                         <td>${pod.namespace}</td>
-                        <td class="${pod.status !== 'Running' ? 'table-danger' : ''}">${pod.status}</td>
+                        <td class="${pod.status === 'Running' ? 'table-success' : 'table-danger'}" style="background-color: rgba(40, 167, 69, 0.1); border: 1px solid #dee2e6;">${pod.status}</td>
                         <td>${pod.nodename}</td>
                     `;
 
