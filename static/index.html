@@ -16,7 +16,7 @@
             <div class="card-header">Upload Kube Config</div>
             <div class="card-body">
                 <form id="uploadForm">
-                    <div class="mb-3">
+                    <div class="mb-4">
                         <label for="file" class="form-label">Select File:</label>
                         <input type="file" class="form-control" id="file" name="file" required>
                     </div>
@@ -30,7 +30,9 @@
             </div>
         </div>
 
-        <!-- Get Releases -->
+
+
+        <!-- Upload Release -->
         <div class="card mb-4">
             <div class="card-header">Get Releases</div>
             <div class="card-body">
@@ -38,7 +40,19 @@
 
                 <div id="response" class="mt-3">
                     <h5>Response:</h5>
-                    <pre id="listReleaseResult" class="bg-light p-3 border rounded"></pre>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th>App Version</th>
+                                    <th>Version</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listReleaseResult"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -51,10 +65,24 @@
 
                 <div id="response" class="mt-3">
                     <h5>Response:</h5>
-                    <pre id="listPods" class="bg-light p-3 border rounded"></pre>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Pods</th>
+                                    <th>Namespace</th>
+                                    <th>Status</th>
+                                    <th>Node Name</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listPods"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-        </div>
+        </div>        
+
+
 
         <!-- Upload Release -->
         <div class="card mb-4">
@@ -70,7 +98,19 @@
 
                 <div id="response" class="mt-3">
                     <h5>Response:</h5>
-                    <pre id="responseRelease" class="bg-light p-3 border rounded"></pre>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th>App Version</th>
+                                    <th>Version</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listRepoResult"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -137,9 +177,24 @@
                 });
 
                 const data = await response.json();
-                document.getElementById('listReleaseResult').textContent = JSON.stringify(data, null, 2);
+                const tableBody = document.getElementById('listReleaseResult');
+                tableBody.innerHTML = '';
+
+                data.forEach(release => {
+                    const row = document.createElement('tr');
+
+                    row.innerHTML = `
+                        <td>${release.name}</td>
+                        <td>${release.status}</td>
+                        <td>${release.appversion}</td>
+                        <td>${release.version}</td>
+                    `;
+
+                    tableBody.appendChild(row);
+                });
             } catch (error) {
-                document.getElementById('listReleaseResult').textContent = `Error: ${error.message}`;
+                const tableBody = document.getElementById('listReleaseResult');
+                tableBody.innerHTML = `<tr><td colspan="4">Error: ${error.message}</td></tr>`;
             }
         }
 
@@ -150,19 +205,33 @@
                 });
 
                 const data = await response.json();
-                document.getElementById('listPods').textContent = JSON.stringify(data, null, 2);
+                const tableBody = document.getElementById('listPods');
+                tableBody.innerHTML = '';
+
+                data.forEach(pod => {
+                    const row = document.createElement('tr');
+
+                    row.innerHTML = `
+                        <td>${pod.name}</td>
+                        <td>${pod.namespace}</td>
+                        <td class="${pod.status !== 'Running' ? 'table-danger' : ''}">${pod.status}</td>
+                        <td>${pod.nodename}</td>
+                    `;
+
+                    tableBody.appendChild(row);
+                });
             } catch (error) {
-                document.getElementById('listPods').textContent = `Error: ${error.message}`;
+                const tableBody = document.getElementById('listPods');
+                tableBody.innerHTML = `<tr><td colspan="4">Error: ${error.message}</td></tr>`;
             }
         }
 
         async function uploadRelease() {
             const fileInput = document.getElementById('fileRelease');
-            const responseReleaseElement = document.getElementById('responseRelease');
-            responseReleaseElement.textContent = '';
+            const file = fileInput.files[0];
 
-            if (!fileInput.files.length) {
-                responseReleaseElement.textContent = 'Please select a file to upload.';
+            if (!file) {
+                alert('Please select a file to upload.');
                 return;
             }
 
@@ -175,8 +244,20 @@
                     body: formData,
                 });
 
-                const data = await response.text();
-                document.getElementById('responseRelease').innerHTML = data.replace(/\n/g, '<br>');
+                const data = await response.json();
+                data.forEach(pod => {
+                    const tableBody = document.getElementById('listRepoResult');
+                    const row = document.createElement('tr');
+
+                    row.innerHTML = `
+                        <td>${pod.name}</td>
+                        <td>${pod.chartVersion}</td>
+                        <td>${pod.appVersion}</td>
+                        <td>${pod.description}</td>
+                    `;
+
+                    tableBody.appendChild(row);
+                });
             } catch (error) {
                 responseReleaseElement.textContent = `Error: ${error.message}`;
             }

@@ -34,6 +34,13 @@ type PodStatus struct {
 	NodeName  string `json:"nodename"`  // Pod 所在节点名称
 }
 
+type HelmRepoPackage struct {
+	Name         string `json:"name"`
+	ChartVersion string `json:"chartVersion"`
+	AppVersion   string `json:"appVersion"`
+	Description  string `json:"description"`
+}
+
 // ListReleases 列出 Helm Releases 并存入结构体
 func ListReleases(kubeconfig string) ([]Release, error) {
 	// 检查 kubeconfig 文件是否存在
@@ -162,10 +169,8 @@ func RunHelmDiff(release, chartPath, namespace string, configPath string) (strin
 	return string(output), nil
 }
 
-func UpdateRepolist() {
+func UpdateRepolist(repoName string, repoURL string) {
 	// 設定 repository 的基本信息
-	repoName := "my-local-repo"
-	repoURL := "http://127.0.0.1:9527/static/"
 
 	entry := &repo.Entry{
 		Name: repoName,
@@ -233,4 +238,47 @@ func UpdateRepolist() {
 			fmt.Printf("Repository %s updated successfully.\n", repoEntry.Name)
 		}
 	}
+}
+
+func GetRepolist(repoName string, repoURL string) ([]HelmRepoPackage, error) {
+	// 初始化 Helm 配置
+	settings := cli.New()
+
+	// 添加仓库到 Helm 配置
+	entry := &repo.Entry{
+		Name: repoName,
+		URL:  repoURL,
+	}
+	repository, err := repo.NewChartRepository(entry, getter.All(settings))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create chart repository: %v", err)
+	}
+
+	// 下载并更新仓库索引
+	indexFile, err := repository.DownloadIndexFile()
+	if err != nil {
+		return nil, fmt.Errorf("failed to download index file: %v", err)
+	}
+
+	// 加载索引文件
+	index, err := repo.LoadIndexFile(indexFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load index file: %v", err)
+	}
+
+	// 将包信息存入 HelmRepoPackage
+	var packages []HelmRepoPackage
+	for name, chartVersions := range index.Entries {
+		if len(chartVersions) > 0 {
+			latestVersion := chartVersions[0]
+			packages = append(packages, HelmRepoPackage{
+				Name:         fmt.Sprintf("%s/%s", repoName, name),
+				ChartVersion: latestVersion.Version,
+				AppVersion:   latestVersion.AppVersion,
+				Description:  latestVersion.Description,
+			})
+		}
+	}
+
+	return packages, nil
 }

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"archive/tar"
 	"goexample/utils"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -18,6 +20,7 @@ func main() {
 
 	// 提供靜態資源目錄，用於提供 HTML 測試介面
 	r.Static("/static", "./static")
+	r.Static("/repo", "./static/repo")
 
 	// 處理檔案上傳的路由
 	r.PUT("/uploadConfig", func(c *gin.Context) {
@@ -59,18 +62,67 @@ func main() {
 		}
 
 		// 設定儲存路徑
-		savePath := filepath.Join("/tmp/release", filepath.Base(file.Filename))
-
-		result, err := utils.RunHelmDiff("test1", savePath, "vscode-server", "/tmp/test.config")
+		savePath := filepath.Join("/tmp", filepath.Base(file.Filename))
 
 		// 將檔案儲存到指定目錄
 		if err := c.SaveUploadedFile(file, savePath); err != nil {
-			c.String(http.StatusInternalServerError, "Error")
+			c.String(http.StatusInternalServerError, "Error while saving file")
 			return
 		}
 
+		// 打開已保存的壓縮檔案
+		tarFile, err := os.Open(savePath)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "Error opening tar file")
+			return
+		}
+		defer tarFile.Close()
+
+		// 使用 tar 解壓檔案
+		tarReader := tar.NewReader(tarFile)
+		extractionPath := "./static"
+
+		for {
+			header, err := tarReader.Next()
+			if err == io.EOF {
+				break // 解壓完成
+			}
+			if err != nil {
+				c.String(http.StatusInternalServerError, "Error reading tar file")
+				return
+			}
+
+			targetPath := filepath.Join(extractionPath, header.Name)
+
+			switch header.Typeflag {
+			case tar.TypeDir: // 建立目錄
+				if err := os.MkdirAll(targetPath, 0755); err != nil {
+					c.String(http.StatusInternalServerError, "Error creating directory")
+					return
+				}
+			case tar.TypeReg: // 寫入檔案
+				outFile, err := os.Create(targetPath)
+				if err != nil {
+					c.String(http.StatusInternalServerError, "Error creating file")
+					return
+				}
+				if _, err := io.Copy(outFile, tarReader); err != nil {
+					outFile.Close()
+					c.String(http.StatusInternalServerError, "Error writing file")
+					return
+				}
+				outFile.Close()
+			default:
+				// 其他格式無需處理
+			}
+		}
+
+		utils.UpdateRepolist("my-local-repo", "http://127.0.0.1:8888/static/repo")
+
+		test, _ := utils.GetRepolist("my-local-repo", "http://127.0.0.1:8888/static/repo")
+
 		// 返回成功訊息
-		c.String(http.StatusOK, result)
+		c.JSON(http.StatusOK, test)
 	})
 
 	r.GET("/listRelease", func(c *gin.Context) {
