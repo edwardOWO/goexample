@@ -43,7 +43,7 @@ func main() {
 			return
 		}
 
-		utils.UpdateRepolist()
+		//utils.UpdateRepolist()
 
 		// 返回成功訊息
 		c.JSON(http.StatusOK, gin.H{"message": "檔案上傳成功", "path": savePath})
@@ -61,7 +61,7 @@ func main() {
 		// 設定儲存路徑
 		savePath := filepath.Join("/tmp/release", filepath.Base(file.Filename))
 
-		result, err := utils.RunHelmDiff("test-nginx", savePath, "vscode-server", "/tmp/test.config")
+		result, err := utils.RunHelmDiff("test1", savePath, "vscode-server", "/tmp/test.config")
 
 		// 將檔案儲存到指定目錄
 		if err := c.SaveUploadedFile(file, savePath); err != nil {
@@ -97,7 +97,7 @@ func main() {
 		// 设置 kubeconfig 文件的路径
 
 		// 调用 utils.ListReleases 函数
-		result, err := utils.RunHelmDiff("test-nginx", "/tmp/nginx-18.3.5.tgz", "vscode-server", "/tmp/test.config")
+		result, err := utils.RunHelmDiff("test1", "/tmp/release/nginx-18.3.5.tgz", "vscode-server", "/tmp/test.config")
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, result)
@@ -109,7 +109,7 @@ func main() {
 	})
 
 	// 啟動伺服器
-	if err := r.Run(":9527"); err != nil {
+	if err := r.Run(":8888"); err != nil {
 		log.Fatalf("無法啟動伺服器: %v", err)
 	}
 }

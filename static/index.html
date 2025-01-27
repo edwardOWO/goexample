@@ -4,86 +4,107 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>File Upload Test</title>
-    <style>
-        /* 确保换行时保留格式 */
-        pre {
-            white-space: pre-wrap; /* 允许换行 */
-            word-wrap: break-word; /* 强制长字符串换行 */
-            border: 1px solid #ccc; /* 添加边框便于观察 */
-            padding: 10px;
-            background-color: #f9f9f9;
-        }
-    </style>
+    <!-- 引入 Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <h1>helm 維運介面測試</h1>
-    
-    <fieldset>
-        <legend>Upload Kube Config</legend>
-        <form id="uploadForm">
-            <input type="file" id="file" name="file" required>
-            <br><br>
-            <button type="button" onclick="uploadFile()">Upload File</button>
-        </form>
+    <div class="container my-5">
+        <h1 class="text-center mb-4">Helm 維運介面測試</h1>
 
-        <div id="response" style="margin-top: 20px;">
-            <h3>Response:</h3>
-            <pre id="responseData"></pre>
+        <!-- Upload Kube Config -->
+        <div class="card mb-4">
+            <div class="card-header">Upload Kube Config</div>
+            <div class="card-body">
+                <form id="uploadForm">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Select File:</label>
+                        <input type="file" class="form-control" id="file" name="file" required>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="uploadFile()">Upload File</button>
+                </form>
+
+                <div id="response" class="mt-3">
+                    <h5>Response:</h5>
+                    <pre id="responseData" class="bg-light p-3 border rounded"></pre>
+                </div>
+            </div>
         </div>
-    </fieldset>
-    
-    <fieldset style="margin-top: 20px;">
-        <legend>Get Releases</legend>
-        <form id="releaseForm">
-            <button type="button" onclick="listRelease()">GetRelease</button>
-        </form>
 
-        <div id="response" style="margin-top: 20px;">
-            <h3>Response:</h3>
-            <pre id="listReleaseResult"></pre>
+        <!-- Get Releases -->
+        <div class="card mb-4">
+            <div class="card-header">Get Releases</div>
+            <div class="card-body">
+                <button type="button" class="btn btn-primary mb-3" onclick="listRelease()">Get Releases</button>
+
+                <div id="response" class="mt-3">
+                    <h5>Response:</h5>
+                    <pre id="listReleaseResult" class="bg-light p-3 border rounded"></pre>
+                </div>
+            </div>
         </div>
-    </fieldset>
 
-    <fieldset style="margin-top: 20px;">
-        <legend>Get Pods</legend>
-        <form id="podForm">
-            <button type="button" onclick="listPods()">GetRelease</button>
-        </form>
+        <!-- Get Pods -->
+        <div class="card mb-4">
+            <div class="card-header">Get Pods</div>
+            <div class="card-body">
+                <button type="button" class="btn btn-primary mb-3" onclick="listPods()">Get Pods</button>
 
-        <div id="response" style="margin-top: 20px;">
-            <h3>Response:</h3>
-            <pre id="listPods"></pre>
+                <div id="response" class="mt-3">
+                    <h5>Response:</h5>
+                    <pre id="listPods" class="bg-light p-3 border rounded"></pre>
+                </div>
+            </div>
         </div>
-    </fieldset>
 
-    <fieldset style="margin-top: 20px;">
-        <legend>Upload Release</legend>
-        <form id="uploadForm">
-            <input type="file" id="fileRelease" name="file" required>
-            <br><br>
-            <button type="button" onclick="uploadRelease()">Upload File</button>
-        </form>
-    
-        <div id="response" style="margin-top: 20px;">
-            <h3>Response:</h3>
-            <pre id="responseRelease"></pre>
+        <!-- Upload Release -->
+        <div class="card mb-4">
+            <div class="card-header">Upload Release</div>
+            <div class="card-body">
+                <form id="uploadForm">
+                    <div class="mb-3">
+                        <label for="fileRelease" class="form-label">Select Release File:</label>
+                        <input type="file" class="form-control" id="fileRelease" name="file" required>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="uploadRelease()">Upload Release</button>
+                </form>
+
+                <div id="response" class="mt-3">
+                    <h5>Response:</h5>
+                    <pre id="responseRelease" class="bg-light p-3 border rounded"></pre>
+                </div>
+            </div>
         </div>
-    </fieldset>
 
-    <fieldset style="margin-top: 20px;">
-        <legend>diff Release</legend>
-        <form id="uploadForm">
-            <button type="button" onclick="diffRelease()">diffRelease</button>
-            <button type="button" onclick="clear()">clearRelease</button>
-        </form>
+        <!-- Diff Release -->
+        <div class="card mb-4">
+            <div class="card-header">Diff Release</div>
+            <div class="card-body">
+                <button type="button" class="btn btn-primary" onclick="diffRelease()">Diff Release</button>
+                <button type="button" class="btn btn-secondary" onclick="clear()">Clear</button>
 
-        <div id="response" style="margin-top: 20px;">
-            <h3>Response:</h3>
-            <pre id="diffReleaseResult"></pre>
+                <div id="response" class="mt-3">
+                    <h5>Response:</h5>
+                    <pre id="diffReleaseResult" class="bg-light p-3 border rounded"></pre>
+                </div>
+            </div>
         </div>
-    </fieldset>
+    </div>
+
+    <!-- 引入 Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        const config = {
+            baseURL: '/vscode/proxy/8888',
+            endpoints: {
+                uploadConfig: '/uploadConfig',
+                listRelease: '/listRelease',
+                listPods: '/listPods',
+                uploadRelease: '/uploadRelease',
+                diffRelease: '/diffRelease'
+            }
+        };
+
         async function uploadFile() {
             const fileInput = document.getElementById('file');
             const file = fileInput.files[0];
@@ -97,7 +118,7 @@
             formData.append('file', file);
 
             try {
-                const response = await fetch('/vscode/proxy/9527/uploadConfig', {
+                const response = await fetch(config.baseURL + config.endpoints.uploadConfig, {
                     method: 'PUT',
                     body: formData
                 });
@@ -111,7 +132,7 @@
 
         async function listRelease() {
             try {
-                const response = await fetch('/vscode/proxy/9527/listRelease', {
+                const response = await fetch(config.baseURL + config.endpoints.listRelease, {
                     method: 'GET'
                 });
 
@@ -122,10 +143,9 @@
             }
         }
 
-
         async function listPods() {
             try {
-                const response = await fetch('/vscode/proxy/9527/listPods', {
+                const response = await fetch(config.baseURL + config.endpoints.listPods, {
                     method: 'GET'
                 });
 
@@ -137,52 +157,36 @@
         }
 
         async function uploadRelease() {
-        // 获取文件输入框元素
             const fileInput = document.getElementById('fileRelease');
             const responseReleaseElement = document.getElementById('responseRelease');
-
-            // 清空旧响应数据
             responseReleaseElement.textContent = '';
 
-            // 检查是否选择了文件
             if (!fileInput.files.length) {
                 responseReleaseElement.textContent = 'Please select a file to upload.';
                 return;
             }
 
-            // 创建 FormData 并附加文件
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
 
             try {
-                // 发送文件到服务器
-                const response = await fetch('/vscode/proxy/9527/uploadRelease', {
+                const response = await fetch(config.baseURL + config.endpoints.uploadRelease, {
                     method: 'PUT',
                     body: formData,
                 });
 
-                
-
-                // 获取响应文本
                 const data = await response.text();
-
-                const formattedResponse = data.replace(/\\n/g, '<br>');
-
-                // 显示响应内容，支持换行
-                document.getElementById('responseRelease').innerHTML = formattedResponse;
+                document.getElementById('responseRelease').innerHTML = data.replace(/\n/g, '<br>');
             } catch (error) {
-                // 显示错误信息
                 responseReleaseElement.textContent = `Error: ${error.message}`;
             }
         }
-        
-        async function diffRelease() {
 
+        async function diffRelease() {
             document.getElementById('diffReleaseResult').textContent = '';
 
-
             try {
-                const response = await fetch('/vscode/proxy/9527/diffRelease', {
+                const response = await fetch(config.baseURL + config.endpoints.diffRelease, {
                     method: 'POST',
                 });
 
