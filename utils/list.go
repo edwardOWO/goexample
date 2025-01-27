@@ -133,12 +133,22 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 	} else {
 		// 将 Pods 数据存储到自定义结构体
 		for _, p := range pods.Items {
-			podList = append(podList, PodStatus{
-				Name:      p.Name,
-				Namespace: p.Namespace,
-				Status:    string(p.Status.Phase),
-				NodeName:  p.Spec.NodeName,
-			})
+
+			if string(p.Status.Phase) == "Running" {
+				podList = append(podList, PodStatus{
+					Name:      p.Name,
+					Namespace: p.Namespace,
+					Status:    string(p.Status.Phase),
+					NodeName:  p.Spec.NodeName,
+				})
+			} else {
+				podList = append(podList, PodStatus{
+					Name:      p.Name,
+					Namespace: p.Namespace,
+					Status:    fmt.Sprintf("%s", p.Status.ContainerStatuses[0].State.Waiting.Reason),
+					NodeName:  p.Spec.NodeName,
+				})
+			}
 		}
 
 		// 将结构体数据转换为 JSON 格式并输出
