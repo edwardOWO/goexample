@@ -47,7 +47,6 @@ func main() {
 		}
 
 		//utils.UpdateRepolist()
-		utils.InstallRelease("my-local-repo", "http://127.0.0.1:8888/static/repo", "nginx", "values.yaml", "/tmp/test.config")
 
 		// 返回成功訊息
 		c.JSON(http.StatusOK, gin.H{"message": "檔案上傳成功", "path": savePath})
@@ -151,6 +150,20 @@ func main() {
 
 		// 调用 utils.ListReleases 函数
 		result, err := utils.RunHelmDiff("test1", "/tmp/release/nginx-18.3.5.tgz", "vscode-server", "/tmp/test.config")
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, result)
+			return
+		}
+
+		// 返回 JSON 格式的响应
+		c.String(http.StatusOK, result)
+	})
+
+	r.POST("/installRelease", func(c *gin.Context) {
+		// 设置 kubeconfig 文件的路径
+
+		result, err := utils.InstallRelease("my-local-repo", "http://127.0.0.1:8888/static/repo", "nginx", "values.yaml", "/tmp/test.config")
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, result)

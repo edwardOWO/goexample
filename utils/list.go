@@ -20,10 +20,11 @@ import (
 
 // Release 定义一个结构体用于存储 Helm Release 的信息
 type Release struct {
-	Name       string `json:"name"`       // Release 名称
-	Status     string `json:"status"`     // Release 状态
-	AppVersion string `json:"appversion"` // Release 状态
-	Version    int    `json:"version"`    // Version 状态
+	Name         string `json:"name"`         // Release 名称
+	Status       string `json:"status"`       // Release 状态
+	AppVersion   string `json:"appversion"`   // Release 状态
+	Version      int    `json:"version"`      // Version 状态
+	ChartVersion string `json:"chartversion"` // Release 状态
 }
 
 // PodStatus 定义一个结构体用于存储 Pod 的信息
@@ -36,7 +37,7 @@ type PodStatus struct {
 
 type HelmRepoPackage struct {
 	Name         string `json:"name"`
-	ChartVersion string `json:"chartVersion"`
+	ChartVersion string `json:"chartversion"`
 	AppVersion   string `json:"appVersion"`
 	Description  string `json:"description"`
 }
@@ -82,10 +83,11 @@ func ListReleases(kubeconfig string) ([]Release, error) {
 		for _, r := range releases {
 
 			releaseList = append(releaseList, Release{
-				Name:       r.Name,
-				Status:     string(r.Info.Status),
-				AppVersion: r.Chart.AppVersion(),
-				Version:    r.Version,
+				Name:         r.Name,
+				Status:       string(r.Info.Status),
+				AppVersion:   r.Chart.AppVersion(),
+				ChartVersion: r.Chart.Metadata.Version,
+				Version:      r.Version,
 			})
 		}
 

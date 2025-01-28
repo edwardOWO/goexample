@@ -46,6 +46,7 @@
                                 <tr>
                                     <th>Name</th>
                                     <th>Status</th>
+                                    <th>Chart Version </th>
                                     <th>App Version</th>
                                     <th>Version</th>
                                 </tr>
@@ -134,6 +135,27 @@
                 </div>
             </div>
         </div>
+
+
+
+
+        <!-- install package -->
+        <div class="card mb-4">
+            <div class="card-header">install Release</div>
+            <div class="card-body">
+                <button type="button" class="btn btn-primary" onclick="installRelease()">Install Release</button>
+                <button type="button" class="btn btn-secondary" onclick="clear()">Clear</button>
+
+                <div id="response" class="mt-3">
+                    <h5>Response:</h5>
+                    <pre id="installReleaseResult" class="bg-light p-3 border rounded"></pre>
+                </div>
+            </div>
+        </div>
+
+
+
+
     </div>
 
     <!-- 引入 Bootstrap JS -->
@@ -147,7 +169,8 @@
                 listRelease: '/listRelease',
                 listPods: '/listPods',
                 uploadRelease: '/uploadRelease',
-                diffRelease: '/diffRelease'
+                diffRelease: '/diffRelease',
+                installRelease: '/installRelease'
             }
         };
 
@@ -192,6 +215,7 @@
                     row.innerHTML = `
                         <td>${release.name}</td>
                         <td class="${release.status.trim() === 'deployed' ? 'table-success' : 'table-danger'}" style="${release.status.trim()  === 'deployed' ? 'background-color: rgba(40, 167, 69, 0.1); border: 1px solid #dee2e6;' : 'background-color: rgba(220, 53, 69, 0.1); border: 1px solid #dee2e6;'}">${release.status}</td>
+                        <td>${release.chartversion}</td>
                         <td>${release.appversion}</td>
                         <td>${release.version}</td>
                     `;
@@ -262,6 +286,8 @@
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
 
+            document.getElementById('listRepoResult').innerHTML = '';
+
             try {
                 const response = await fetch(config.baseURL + config.endpoints.uploadRelease, {
                     method: 'PUT',
@@ -275,7 +301,7 @@
 
                     row.innerHTML = `
                         <td>${pod.name}</td>
-                        <td>${pod.chartVersion}</td>
+                        <td>${pod.chartversion}</td>
                         <td>${pod.appVersion}</td>
                         <td>${pod.description}</td>
                     `;
@@ -299,6 +325,21 @@
                 document.getElementById('diffReleaseResult').textContent = data;
             } catch (error) {
                 document.getElementById('diffReleaseResult').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function installRelease() {
+            document.getElementById('installReleaseResult').textContent = '';
+
+            try {
+                const response = await fetch(config.baseURL + config.endpoints.installRelease, {
+                    method: 'POST',
+                });
+
+                const data = await response.text();
+                document.getElementById('installReleaseResult').textContent = data;
+            } catch (error) {
+                document.getElementById('installReleaseResult').textContent = `Error: ${error.message}`;
             }
         }
     </script>
