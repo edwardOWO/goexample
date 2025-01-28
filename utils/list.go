@@ -292,3 +292,83 @@ func GetRepolist(repoName string, repoURL string) ([]HelmRepoPackage, error) {
 
 	return packages, nil
 }
+func InstallRelease(repoName, repoURL, chartName string, valuesName string, kubeconfig string) (string, error) {
+
+	chartPackageName, _ := GetChartPackageName(repoName, repoURL, chartName)
+
+	// 下載檔案
+
+	cmd := exec.Command("helm", "pull", repoName+"/"+chartName, "--kubeconfig", kubeconfig)
+
+	// 执行命令
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Helm pull 执行失败: %s", string(output))
+		return "", err
+	}
+
+	// 解壓縮檔案
+	cmd = exec.Command("tar", "-zxvf", chartPackageName)
+
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("解壓縮執行失敗: %s", string(output))
+		return "", err
+	}
+
+	// 初始化 Helm 设置
+	cmd = exec.Command("helm", "install", "test", "./"+chartName, "--namespace", "default", "-f", "./"+chartName+"/"+valuesName, "--kubeconfig", kubeconfig)
+
+	// 执行命令
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Helm diff 执行失败: %s", string(output))
+		return "", err
+	}
+
+	// 打印输出
+	log.Printf("Helm diff 执行成功: %s", string(output))
+
+	return string(output), nil
+
+}
+
+func GetChartPackageName(repoName, repoURL, chartName string) (string, error) {
+	// 初始化 Helm 配置
+	settings := cli.New()
+
+	// 添加仓库到 Helm 配置
+	entry := &repo.Entry{
+		Name: repoName,
+		URL:  repoURL,
+	}
+	repository, err := repo.NewChartRepository(entry, getter.All(settings))
+	if err != nil {
+		return "", fmt.Errorf("failed to download index file: %v", err)
+	}
+
+	// 下载并更新仓库索引
+	indexFile, err := repository.DownloadIndexFile()
+	if err != nil {
+		return "", fmt.Errorf("failed to download index file: %v", err)
+	}
+
+	// 加载索引文件
+	index, err := repo.LoadIndexFile(indexFile)
+	if err != nil {
+		return "", fmt.Errorf("failed to load index file: %v", err)
+	}
+
+	// 检索指定 Chart 的版本信息
+	chartVersions, ok := index.Entries[chartName]
+	if !ok || len(chartVersions) == 0 {
+		return "", fmt.Errorf("chart %s not found in repository %s", chartName, repoName)
+	}
+
+	// 返回指定 Chart 的最新版本
+	latestVersion := chartVersions[0] // Helm 默认按照版本倒序排列
+
+	packagesName := fmt.Sprintf("%s-%s.tgz", chartName, latestVersion.Version)
+
+	return packagesName, nil
+}

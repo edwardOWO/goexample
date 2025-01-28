@@ -9,7 +9,7 @@ entries:
       licenses: Apache-2.0
     apiVersion: v2
     appVersion: 3.1.2
-    created: "2025-01-27T22:31:39.127137903+08:00"
+    created: "2025-01-28T03:51:19.69088381+08:00"
     dependencies:
     - name: common
       repository: oci://registry-1.docker.io/bitnamicharts
@@ -48,7 +48,47 @@ entries:
       licenses: Apache-2.0
     apiVersion: v2
     appVersion: 1.27.3
-    created: "2025-01-27T22:31:39.149976531+08:00"
+    created: "2025-01-28T03:51:19.724306363+08:00"
+    dependencies:
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      tags:
+      - bitnami-common
+      version: 2.x.x
+    description: NGINX Open Source is a web server that can be also used as a reverse
+      proxy, load balancer, and HTTP cache. Recommended for high-demanding sites due
+      to its ability to provide faster content.
+    digest: 7d17bf07d1d6a0a6a9ee9654fa13a27f651b5914d19a0b39a18ea133d17b1b3a
+    home: https://bitnami.com
+    icon: https://bitnami.com/assets/stacks/nginx/img/nginx-stack-220x234.png
+    keywords:
+    - nginx
+    - http
+    - web
+    - www
+    - reverse proxy
+    maintainers:
+    - name: Broadcom, Inc. All Rights Reserved.
+      url: https://github.com/bitnami/charts
+    name: nginx
+    sources:
+    - https://github.com/bitnami/charts/tree/main/bitnami/nginx
+    urls:
+    - nginx-18.3.66.tgz
+    version: 18.3.66
+  - annotations:
+      category: Infrastructure
+      images: |
+        - name: git
+          image: docker.io/bitnami/git:2.48.0-debian-12-r0
+        - name: nginx
+          image: docker.io/bitnami/nginx:1.27.3-debian-12-r5
+        - name: nginx-exporter
+          image: docker.io/bitnami/nginx-exporter:1.4.1-debian-12-r0
+      licenses: Apache-2.0
+    apiVersion: v2
+    appVersion: 1.27.3
+    created: "2025-01-28T03:51:19.713690163+08:00"
     dependencies:
     - name: common
       repository: oci://registry-1.docker.io/bitnamicharts
@@ -88,7 +128,7 @@ entries:
       licenses: Apache-2.0
     apiVersion: v2
     appVersion: 1.27.3
-    created: "2025-01-27T22:31:39.139342917+08:00"
+    created: "2025-01-28T03:51:19.704352356+08:00"
     dependencies:
     - name: common
       repository: oci://registry-1.docker.io/bitnamicharts
@@ -116,4 +156,4 @@ entries:
     urls:
     - nginx-18.3.5.tgz
     version: 18.3.5
-generated: "2025-01-27T22:31:39.120350844+08:00"
+generated: "2025-01-28T03:51:19.661488435+08:00"

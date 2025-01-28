@@ -47,6 +47,7 @@ func main() {
 		}
 
 		//utils.UpdateRepolist()
+		utils.InstallRelease("my-local-repo", "http://127.0.0.1:8888/static/repo", "nginx", "values.yaml", "/tmp/test.config")
 
 		// 返回成功訊息
 		c.JSON(http.StatusOK, gin.H{"message": "檔案上傳成功", "path": savePath})
