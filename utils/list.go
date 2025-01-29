@@ -20,11 +20,13 @@ import (
 
 // Release 定义一个结构体用于存储 Helm Release 的信息
 type Release struct {
-	Name         string `json:"name"`         // Release 名称
-	Status       string `json:"status"`       // Release 状态
-	AppVersion   string `json:"appversion"`   // Release 状态
-	Version      int    `json:"version"`      // Version 状态
-	ChartVersion string `json:"chartversion"` // Release 状态
+	Name            string `json:"name"`            // Release 名称
+	Status          string `json:"status"`          // Release 状态
+	AppVersion      string `json:"appversion"`      // Release 状态
+	Version         int    `json:"version"`         // Version 状态
+	ChartVersion    string `json:"chartversion"`    // Release 状态
+	NewChartVersion string `json:"newchartversion"` // Release 状态
+	NeedUpdate      bool   `json:"needupdate"`
 }
 
 // PodStatus 定义一个结构体用于存储 Pod 的信息
@@ -43,11 +45,23 @@ type HelmRepoPackage struct {
 }
 
 // ListReleases 列出 Helm Releases 并存入结构体
+func findPackageByName(packages []HelmRepoPackage, name string, currentversion string) (bool, string) {
+	for _, pkg := range packages {
+		if pkg.Name == name {
+			if pkg.ChartVersion != currentversion {
+				return true, pkg.ChartVersion
+			}
+		}
+	}
+	return false, ""
+}
 func ListReleases(kubeconfig string) ([]Release, error) {
 	// 检查 kubeconfig 文件是否存在
 	if _, err := os.Stat(kubeconfig); os.IsNotExist(err) {
 		log.Fatalf("kubeconfig 文件不存在: %v", err)
 	}
+
+	repo, _ := GetRepolist("my-local-repo", "http://127.0.0.1:8888/static/repo")
 
 	// 初始化 Helm CLI 设置
 	settings := cli.New()
@@ -79,15 +93,18 @@ func ListReleases(kubeconfig string) ([]Release, error) {
 		fmt.Println("没有找到已部署的 Release")
 	} else {
 		// 将 Release 数据存储到自定义结构体
-
 		for _, r := range releases {
 
+			status, newversion := findPackageByName(repo, "my-local-repo"+"/"+r.Chart.Metadata.Name, r.Chart.Metadata.Version)
+
 			releaseList = append(releaseList, Release{
-				Name:         r.Name,
-				Status:       string(r.Info.Status),
-				AppVersion:   r.Chart.AppVersion(),
-				ChartVersion: r.Chart.Metadata.Version,
-				Version:      r.Version,
+				Name:            r.Name,
+				Status:          string(r.Info.Status),
+				AppVersion:      r.Chart.AppVersion(),
+				ChartVersion:    r.Chart.Metadata.Version,
+				NewChartVersion: newversion,
+				Version:         r.Version,
+				NeedUpdate:      status,
 			})
 		}
 

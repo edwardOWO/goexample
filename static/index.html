@@ -49,6 +49,8 @@
                                     <th>Chart Version </th>
                                     <th>App Version</th>
                                     <th>Version</th>
+                                    <th>New Chart Version </th>
+                                    <th>NeedUpdate</th>
                                 </tr>
                             </thead>
                             <tbody id="listReleaseResult"></tbody>
@@ -218,8 +220,11 @@
                         <td>${release.chartversion}</td>
                         <td>${release.appversion}</td>
                         <td>${release.version}</td>
-                    `;
-
+                        <td>${release.newchartversion}</td>
+                        <td class="${release.needupdate ? 'table-warning' : ''}">
+                            ${release.needupdate ? '<button class="btn btn-warning" onclick="updateFunction()">Update</button>' : ''}
+                        </td>
+                        `;
                     tableBody.appendChild(row);
                 });
             } catch (error) {
