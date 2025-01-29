@@ -145,12 +145,12 @@
         <div class="card mb-4">
             <div class="card-header">install Release</div>
             <div class="card-body">
-                <button type="button" class="btn btn-primary" onclick="installRelease()">Install Release</button>
+                <button type="button" class="btn btn-primary" onclick="upgradeRelease()">Install Release</button>
                 <button type="button" class="btn btn-secondary" onclick="clear()">Clear</button>
 
                 <div id="response" class="mt-3">
                     <h5>Response:</h5>
-                    <pre id="installReleaseResult" class="bg-light p-3 border rounded"></pre>
+                    <pre id="upgradeReleaseResult" class="bg-light p-3 border rounded"></pre>
                 </div>
             </div>
         </div>
@@ -172,7 +172,7 @@
                 listPods: '/listPods',
                 uploadRelease: '/uploadRelease',
                 diffRelease: '/diffRelease',
-                installRelease: '/installRelease'
+                upgradeRelease: '/upgradeRelease'
             }
         };
 
@@ -333,18 +333,18 @@
             }
         }
 
-        async function installRelease() {
-            document.getElementById('installReleaseResult').textContent = '';
+        async function upgradeRelease() {
+            document.getElementById('upgradeReleaseResult').textContent = '';
 
             try {
-                const response = await fetch(config.baseURL + config.endpoints.installRelease, {
+                const response = await fetch(config.baseURL + config.endpoints.upgradeRelease, {
                     method: 'POST',
                 });
 
                 const data = await response.text();
-                document.getElementById('installReleaseResult').textContent = data;
+                document.getElementById('upgradeReleaseResult').textContent = data;
             } catch (error) {
-                document.getElementById('installReleaseResult').textContent = `Error: ${error.message}`;
+                document.getElementById('upgradeReleaseResult').textContent = `Error: ${error.message}`;
             }
         }
     </script>

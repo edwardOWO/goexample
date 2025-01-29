@@ -160,10 +160,10 @@ func main() {
 		c.String(http.StatusOK, result)
 	})
 
-	r.POST("/installRelease", func(c *gin.Context) {
+	r.POST("/upgradeRelease", func(c *gin.Context) {
 		// 设置 kubeconfig 文件的路径
 
-		result, err := utils.InstallRelease("my-local-repo", "http://127.0.0.1:8888/static/repo", "nginx", "values.yaml", "/tmp/test.config")
+		result, err := utils.UpgradeRelease("my-local-repo", "http://127.0.0.1:8888/static/repo", "nginx", "values.yaml", "/tmp/test.config")
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, result)

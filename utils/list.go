@@ -311,7 +311,7 @@ func GetRepolist(repoName string, repoURL string) ([]HelmRepoPackage, error) {
 
 	return packages, nil
 }
-func InstallRelease(repoName, repoURL, chartName string, valuesName string, kubeconfig string) (string, error) {
+func UpgradeRelease(repoName, repoURL, chartName string, valuesName string, kubeconfig string) (string, error) {
 
 	chartPackageName, _ := GetChartPackageName(repoName, repoURL, chartName)
 
@@ -336,7 +336,7 @@ func InstallRelease(repoName, repoURL, chartName string, valuesName string, kube
 	}
 
 	// 初始化 Helm 设置
-	cmd = exec.Command("helm", "install", "test", "./"+chartName, "--namespace", "default", "-f", "./"+chartName+"/"+valuesName, "--kubeconfig", kubeconfig)
+	cmd = exec.Command("helm", "upgrade", "test", "./"+chartName, "--namespace", "default", "-f", "./"+chartName+"/"+valuesName, "--kubeconfig", kubeconfig)
 
 	// 执行命令
 	output, err = cmd.CombinedOutput()
