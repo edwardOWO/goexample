@@ -12,6 +12,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type UpgradeRequest struct {
+	ReleaseName string `json:"releasename"`
+	ChartName   string `json:"chartname"`
+	Namespace   string `json:"namespace"`
+}
+
 func main() {
 
 	// 初始化 Gin 引擎
@@ -161,9 +167,27 @@ func main() {
 	})
 
 	r.POST("/upgradeRelease", func(c *gin.Context) {
+
 		// 设置 kubeconfig 文件的路径
 
-		result, err := utils.UpgradeRelease("my-local-repo", "http://127.0.0.1:8888/static/repo", "nginx", "values.yaml", "/tmp/test.config")
+		var req UpgradeRequest
+
+		// 解析 JSON 请求体
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		// 调用升级函数
+		result, err := utils.UpgradeRelease(
+			"my-local-repo",
+			"http://127.0.0.1:8888/static/repo",
+			req.ReleaseName,
+			req.ChartName,
+			"values.yaml",
+			req.Namespace,
+			"/tmp/test.config",
+		)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, result)

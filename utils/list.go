@@ -22,6 +22,8 @@ import (
 type Release struct {
 	Name            string `json:"name"`            // Release 名称
 	Status          string `json:"status"`          // Release 状态
+	ChartName       string `json:"chartname"`       // Release 状态
+	Namespace       string `json:"namespace"`       // Release 状态
 	AppVersion      string `json:"appversion"`      // Release 状态
 	Version         int    `json:"version"`         // Version 状态
 	ChartVersion    string `json:"chartversion"`    // Release 状态
@@ -100,6 +102,8 @@ func ListReleases(kubeconfig string) ([]Release, error) {
 			releaseList = append(releaseList, Release{
 				Name:            r.Name,
 				Status:          string(r.Info.Status),
+				ChartName:       r.Chart.Metadata.Name,
+				Namespace:       r.Namespace,
 				AppVersion:      r.Chart.AppVersion(),
 				ChartVersion:    r.Chart.Metadata.Version,
 				NewChartVersion: newversion,
@@ -311,7 +315,7 @@ func GetRepolist(repoName string, repoURL string) ([]HelmRepoPackage, error) {
 
 	return packages, nil
 }
-func UpgradeRelease(repoName, repoURL, chartName string, valuesName string, kubeconfig string) (string, error) {
+func UpgradeRelease(repoName, repoURL, releaseName, chartName string, valuesName string, namespace string, kubeconfig string) (string, error) {
 
 	chartPackageName, _ := GetChartPackageName(repoName, repoURL, chartName)
 
@@ -336,7 +340,7 @@ func UpgradeRelease(repoName, repoURL, chartName string, valuesName string, kube
 	}
 
 	// 初始化 Helm 设置
-	cmd = exec.Command("helm", "upgrade", "test", "./"+chartName, "--namespace", "default", "-f", "./"+chartName+"/"+valuesName, "--kubeconfig", kubeconfig)
+	cmd = exec.Command("helm", "upgrade", releaseName, "./"+chartName, "--namespace", namespace, "-f", "./"+chartName+"/"+valuesName, "--kubeconfig", kubeconfig)
 
 	// 执行命令
 	output, err = cmd.CombinedOutput()
