@@ -244,6 +244,8 @@
                 tableBody.innerHTML = `<tr><td colspan="4">Error: ${error.message}</td></tr>`;
             }
         }
+        listRelease();
+        setInterval(listRelease, 5000);
 
 
         async function updateFunction(releasename,chartversion,namespace) {
@@ -270,6 +272,7 @@
                 console.error("Error updating release:", error);
                 alert("Failed to update release.");
             } finally{
+                listRelease();
             }
         }
         async function listPods() {
@@ -299,6 +302,8 @@
                 tableBody.innerHTML = `<tr><td colspan="4">Error: ${error.message}</td></tr>`;
             }
         }
+        listPods();
+        setInterval(listPods, 5000);
 
         function filterPods() {
             const filterValue = document.getElementById('namespaceFilter').value.toLowerCase(); // 获取筛选框值并转小写
