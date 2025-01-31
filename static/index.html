@@ -38,7 +38,7 @@
             <div class="card-header">Get Releases</div>
             <div class="card-body">
                 <button type="button" class="btn btn-primary mb-3" onclick="listRelease()">Get Releases</button>
-
+                <button type="button" class="btn btn-secondary mb-3" id="unlockBtn" onclick="unlock()">Unlock</button>
 
                 <div id="response" class="mt-3">
                     <h5>Response:</h5>
@@ -179,7 +179,8 @@
                 listPods: '/listPods',
                 uploadRelease: '/uploadRelease',
                 diffRelease: '/diffRelease',
-                upgradeRelease: '/upgradeRelease'
+                upgradeRelease: '/upgradeRelease',
+                rollbackRelease: '/rollbackRelease'
             }
         };
 
@@ -234,7 +235,9 @@
                         <td>${release.version}</td>
                         <td>${release.newchartversion}</td>
                         <td class="${release.needupdate ? 'table-warning' : ''}">
-                            ${release.needupdate ? `<button class="btn btn-warning" onclick="updateFunction(&quot;${release.name}&quot;,&quot;${release.chartname}&quot;,&quot;${release.namespace}&quot;)">Update</button>` : ''}
+                            ${release.needupdate 
+                                ? `<button class="btn btn-success" onclick="updateFunction(&quot;${release.name}&quot;,&quot;${release.chartname}&quot;,&quot;${release.namespace}&quot;)" ${unlockupdate ? '' : 'disabled'}>Update</button>` 
+                                : `<button class="btn btn-warning" onclick="rollbackrelease(&quot;${release.name}&quot;,&quot;${release.chartname}&quot;,&quot;${release.namespace}&quot;)" ${unlockupdate ? '' : 'disabled'}>Rollback</button>`}
                         </td>
                     `;
                     tableBody.appendChild(row);
@@ -274,6 +277,55 @@
             } finally{
                 listRelease();
             }
+        }
+        async function rollbackrelease(releasename,chartversion,namespace) {
+
+            const requestData = {
+                releasename: releasename,
+                chartname: chartversion,
+                namespace: namespace
+            };
+
+
+            try {
+                const response = await fetch(config.baseURL + config.endpoints.rollbackRelease, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.text();
+                alert("Update result: " + result);
+            } catch (error) {
+                console.error("Error updating release:", error);
+                alert("Failed to update release.");
+            } finally{
+                listRelease();
+            }
+        }
+
+        let unlockupdate = false;
+
+        function unlock() {
+            // 切換 0 <-> 1
+            unlockupdate = unlockupdate === false ? true : false;
+
+            if (unlockupdate==true){
+                document.getElementById("unlockBtn").className = "btn btn-success mb-3";
+                const buttons = document.querySelectorAll("#listReleaseResult button");
+                buttons.forEach(button => {
+                    button.disabled = false;
+                });
+                document.getElementById("unlockBtn").classList.toggle("btn-primary");
+            }else{
+                document.getElementById("unlockBtn").className = "btn btn-secondary mb-3";
+                const buttons = document.querySelectorAll("#listReleaseResult button");
+                buttons.forEach(button => {
+                    button.disabled = true;
+                });
+            }  
         }
         async function listPods() {
             try {

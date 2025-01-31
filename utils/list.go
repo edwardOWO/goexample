@@ -315,6 +315,24 @@ func GetRepolist(repoName string, repoURL string) ([]HelmRepoPackage, error) {
 
 	return packages, nil
 }
+func RollbackRelease(repoName, repoURL, releaseName, chartName string, valuesName string, namespace string, kubeconfig string) (string, error) {
+
+	// 初始化 Helm 设置
+	cmd := exec.Command("helm", "rollback", releaseName, "--namespace", namespace, "--kubeconfig", kubeconfig)
+
+	// 执行命令
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Helm diff 执行失败: %s", string(output))
+		return "", err
+	}
+
+	// 打印输出
+	log.Printf("Helm diff 执行成功: %s", string(output))
+
+	return string(output), nil
+
+}
 func UpgradeRelease(repoName, repoURL, releaseName, chartName string, valuesName string, namespace string, kubeconfig string) (string, error) {
 
 	chartPackageName, _ := GetChartPackageName(repoName, repoURL, chartName)

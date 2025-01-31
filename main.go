@@ -198,6 +198,38 @@ func main() {
 		c.String(http.StatusOK, result)
 	})
 
+	r.POST("/rollbackRelease", func(c *gin.Context) {
+
+		// 设置 kubeconfig 文件的路径
+
+		var req UpgradeRequest
+
+		// 解析 JSON 请求体
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		// 调用升级函数
+		result, err := utils.RollbackRelease(
+			"my-local-repo",
+			"http://127.0.0.1:8888/static/repo",
+			req.ReleaseName,
+			req.ChartName,
+			"values.yaml",
+			req.Namespace,
+			"/tmp/test.config",
+		)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, result)
+			return
+		}
+
+		// 返回 JSON 格式的响应
+		c.String(http.StatusOK, result)
+	})
+
 	// 啟動伺服器
 	if err := r.Run(":8888"); err != nil {
 		log.Fatalf("無法啟動伺服器: %v", err)
