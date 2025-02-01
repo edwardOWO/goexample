@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"time"
 
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
@@ -20,15 +21,16 @@ import (
 
 // Release 定义一个结构体用于存储 Helm Release 的信息
 type Release struct {
-	Name            string `json:"name"`            // Release 名称
-	Status          string `json:"status"`          // Release 状态
-	ChartName       string `json:"chartname"`       // Release 状态
-	Namespace       string `json:"namespace"`       // Release 状态
-	AppVersion      string `json:"appversion"`      // Release 状态
-	Version         int    `json:"version"`         // Version 状态
-	ChartVersion    string `json:"chartversion"`    // Release 状态
-	NewChartVersion string `json:"newchartversion"` // Release 状态
-	NeedUpdate      bool   `json:"needupdate"`
+	Name             string `json:"name"`       // Release 名称
+	Status           string `json:"status"`     // Release 状态
+	ChartName        string `json:"chartname"`  // Release 状态
+	Namespace        string `json:"namespace"`  // Release 状态
+	AppVersion       string `json:"appversion"` // Release 状态
+	Version          int    `json:"version"`    // Version 状态
+	LastDeployedTime string `json:"lastdeployedtime"`
+	ChartVersion     string `json:"chartversion"`    // Release 状态
+	NewChartVersion  string `json:"newchartversion"` // Release 状态
+	NeedUpdate       bool   `json:"needupdate"`
 }
 
 // PodStatus 定义一个结构体用于存储 Pod 的信息
@@ -95,20 +97,23 @@ func ListReleases(kubeconfig string) ([]Release, error) {
 		fmt.Println("没有找到已部署的 Release")
 	} else {
 		// 将 Release 数据存储到自定义结构体
+		loc, _ := time.LoadLocation("Asia/Taipei")
 		for _, r := range releases {
 
 			status, newversion := findPackageByName(repo, "my-local-repo"+"/"+r.Chart.Metadata.Name, r.Chart.Metadata.Version)
 
 			releaseList = append(releaseList, Release{
-				Name:            r.Name,
-				Status:          string(r.Info.Status),
-				ChartName:       r.Chart.Metadata.Name,
-				Namespace:       r.Namespace,
-				AppVersion:      r.Chart.AppVersion(),
-				ChartVersion:    r.Chart.Metadata.Version,
-				NewChartVersion: newversion,
-				Version:         r.Version,
-				NeedUpdate:      status,
+
+				Name:             r.Name,
+				Status:           string(r.Info.Status),
+				ChartName:        r.Chart.Metadata.Name,
+				Namespace:        r.Namespace,
+				AppVersion:       r.Chart.AppVersion(),
+				ChartVersion:     r.Chart.Metadata.Version,
+				NewChartVersion:  newversion,
+				Version:          r.Version,
+				LastDeployedTime: r.Info.LastDeployed.In(loc).Format("2006-01-02 15:04:05"),
+				NeedUpdate:       status,
 			})
 		}
 

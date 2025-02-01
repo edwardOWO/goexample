@@ -53,6 +53,7 @@
                                     <th>Chart Version </th>
                                     <th>App Version</th>
                                     <th>Version</th>
+                                    <th>Last Deployed Time</th>
                                     <th>New Chart Version </th>
                                     <th>NeedUpdate</th>
                                 </tr>
@@ -233,11 +234,14 @@
                         <td>${release.chartversion}</td>
                         <td>${release.appversion}</td>
                         <td>${release.version}</td>
+                        <td>${release.lastdeployedtime}</td>
                         <td>${release.newchartversion}</td>
                         <td class="${release.needupdate ? 'table-warning' : ''}">
-                            ${release.needupdate 
-                                ? `<button class="btn btn-success" onclick="updateFunction(&quot;${release.name}&quot;,&quot;${release.chartname}&quot;,&quot;${release.namespace}&quot;)" ${unlockupdate ? '' : 'disabled'}>Update</button>` 
-                                : `<button class="btn btn-warning" onclick="rollbackrelease(&quot;${release.name}&quot;,&quot;${release.chartname}&quot;,&quot;${release.namespace}&quot;)" ${unlockupdate ? '' : 'disabled'}>Rollback</button>`}
+                            ${release.needupdate ? 
+                                `<button class="btn btn-success" onclick="updateFunction(&quot;${release.name}&quot;,&quot;${release.chartname}&quot;,&quot;${release.namespace}&quot;)" ${unlockupdate ? '' : 'disabled'}>Update</button>` 
+                                : (release.version > 1 ? 
+                                    `<button class="btn btn-warning" onclick="rollbackrelease(&quot;${release.name}&quot;,&quot;${release.chartname}&quot;,&quot;${release.namespace}&quot;)" ${unlockupdate ? '' : 'disabled'}>Rollback</button>` 
+                                    : '')}
                         </td>
                     `;
                     tableBody.appendChild(row);
