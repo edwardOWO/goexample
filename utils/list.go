@@ -35,10 +35,11 @@ type Release struct {
 
 // PodStatus 定义一个结构体用于存储 Pod 的信息
 type PodStatus struct {
-	Name      string `json:"name"`      // Pod 名称
-	Namespace string `json:"namespace"` // Pod 所属命名空间
-	Status    string `json:"status"`    // Pod 状态
-	NodeName  string `json:"nodename"`  // Pod 所在节点名称
+	Name        string `json:"name"`        // Pod 名称
+	Namespace   string `json:"namespace"`   // Pod 所属命名空间
+	ReleaseName string `json:"releasename"` // Pod 的 release 來源
+	Status      string `json:"status"`      // Pod 状态
+	NodeName    string `json:"nodename"`    // Pod 所在节点名称
 }
 
 type HelmRepoPackage struct {
@@ -164,17 +165,19 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 
 			if string(p.Status.Phase) == "Running" {
 				podList = append(podList, PodStatus{
-					Name:      p.Name,
-					Namespace: p.Namespace,
-					Status:    string(p.Status.Phase),
-					NodeName:  p.Spec.NodeName,
+					Name:        p.Name,
+					Namespace:   p.Namespace,
+					ReleaseName: p.Labels["app.kubernetes.io/instance"],
+					Status:      string(p.Status.Phase),
+					NodeName:    p.Spec.NodeName,
 				})
 			} else {
 				podList = append(podList, PodStatus{
-					Name:      p.Name,
-					Namespace: p.Namespace,
-					Status:    fmt.Sprintf("%s", p.Status.ContainerStatuses[0].State.Waiting.Reason),
-					NodeName:  p.Spec.NodeName,
+					Name:        p.Name,
+					Namespace:   p.Namespace,
+					ReleaseName: p.Labels["app.kubernetes.io/instance"],
+					Status:      fmt.Sprintf("%s", p.Status.ContainerStatuses[0].State.Waiting.Reason),
+					NodeName:    p.Spec.NodeName,
 				})
 			}
 		}

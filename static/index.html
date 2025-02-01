@@ -85,6 +85,7 @@
                                 <tr>
                                     <th>Pods</th>
                                     <th>Namespace</th>
+                                    <th>ReleaseName</th>
                                     <th>Status</th>
                                     <th>Node Name</th>
                                 </tr>
@@ -347,6 +348,7 @@
                     row.innerHTML = `
                         <td>${pod.name}</td>
                         <td>${pod.namespace}</td>
+                        <td>${pod.releasename}</td>
                         <td class="${pod.status.trim() === 'Running' ? 'table-success' : 'table-danger'}" style="${pod.status.trim() === 'Running' ? 'background-color: rgba(40, 167, 69, 0.1); border: 1px solid #dee2e6;' : 'background-color: rgba(220, 53, 69, 0.1); border: 1px solid #dee2e6;'}">${pod.status}</td>
                         <td>${pod.nodename}</td>
                     `;
