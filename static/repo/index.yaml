@@ -9,7 +9,7 @@ entries:
       licenses: Apache-2.0
     apiVersion: v2
     appVersion: 3.1.2
-    created: "2025-01-27T22:31:39.127137903+08:00"
+    created: "2025-02-03T12:53:09.791191053+08:00"
     dependencies:
     - name: common
       repository: oci://registry-1.docker.io/bitnamicharts
@@ -35,6 +35,34 @@ entries:
     urls:
     - haproxy-2.2.5.tgz
     version: 2.2.5
+  juiker-backend:
+  - apiVersion: v2
+    appVersion: 1.0.1
+    created: "2025-02-03T12:53:09.807960375+08:00"
+    description: Juiker for Kubernetes
+    digest: f21407710219a3503d49c6e13b7e7a31220fe516deba39400fce4704a328d213
+    name: juiker-backend
+    urls:
+    - juiker-backend-0.2.3.tgz
+    version: 0.2.3
+  - apiVersion: v2
+    appVersion: 1.0.1
+    created: "2025-02-03T12:53:09.802642892+08:00"
+    description: Juiker for Kubernetes
+    digest: 7b2bda3bb92c57468d857bad260c90161bea1ce9ec1eca3afba5f3ca8f6f6c5f
+    name: juiker-backend
+    urls:
+    - juiker-backend-0.2.2.tgz
+    version: 0.2.2
+  - apiVersion: v2
+    appVersion: 1.0.1
+    created: "2025-02-03T12:53:09.796520492+08:00"
+    description: Juiker for Kubernetes
+    digest: 7702404365f8034645a99c1999920e430204d4082557aed6ad4173772ed42a54
+    name: juiker-backend
+    urls:
+    - juiker-backend-0.2.1.tgz
+    version: 0.2.1
   nginx:
   - annotations:
       category: Infrastructure
@@ -48,7 +76,7 @@ entries:
       licenses: Apache-2.0
     apiVersion: v2
     appVersion: 1.27.3
-    created: "2025-01-27T22:31:39.149976531+08:00"
+    created: "2025-02-03T12:53:09.823565691+08:00"
     dependencies:
     - name: common
       repository: oci://registry-1.docker.io/bitnamicharts
@@ -88,7 +116,7 @@ entries:
       licenses: Apache-2.0
     apiVersion: v2
     appVersion: 1.27.3
-    created: "2025-01-27T22:31:39.139342917+08:00"
+    created: "2025-02-03T12:53:09.814930817+08:00"
     dependencies:
     - name: common
       repository: oci://registry-1.docker.io/bitnamicharts
@@ -116,4 +144,4 @@ entries:
     urls:
     - nginx-18.3.5.tgz
     version: 18.3.5
-generated: "2025-01-27T22:31:39.120350844+08:00"
+generated: "2025-02-03T12:53:09.785296113+08:00"

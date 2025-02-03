@@ -1,0 +1,5 @@
+apiVersion: v2
+appVersion: 1.0.1
+description: Juiker for Kubernetes
+name: juiker-backend
+version: 0.2.3
