@@ -20,6 +20,8 @@ type UpgradeRequest struct {
 
 func main() {
 
+	k8sConfig := "/tmp/config.yaml"
+
 	// 初始化 Gin 引擎
 	r := gin.Default()
 	gin.SetMode(gin.DebugMode)
@@ -38,15 +40,15 @@ func main() {
 		}
 
 		// 設定儲存路徑
-		savePath := filepath.Join("/tmp", filepath.Base(file.Filename))
+		//savePath := filepath.Join("/tmp", filepath.Base(file.Filename))
 
 		// 將檔案儲存到指定目錄
-		if err := c.SaveUploadedFile(file, savePath); err != nil {
+		if err := c.SaveUploadedFile(file, k8sConfig); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "無法儲存檔案: " + err.Error()})
 			return
 		}
 
-		err = os.Setenv("KUBECONFIG", savePath)
+		err = os.Setenv("KUBECONFIG", k8sConfig)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "無法設定 KUBECONFIG: " + err.Error()})
 			return
@@ -55,11 +57,20 @@ func main() {
 		//utils.UpdateRepolist()
 
 		// 返回成功訊息
-		c.JSON(http.StatusOK, gin.H{"message": "檔案上傳成功", "path": savePath})
+		c.JSON(http.StatusOK, gin.H{"message": "檔案上傳成功", "path": k8sConfig})
+	})
+
+	r.GET("/listRepo", func(c *gin.Context) {
+
+		test, _ := utils.GetRepolist("my-local-repo", "http://127.0.0.1:8888/static/repo")
+
+		// 返回成功訊息
+		c.JSON(http.StatusOK, test)
+
 	})
 
 	// 處理檔案上傳的路由
-	r.PUT("/uploadRelease", func(c *gin.Context) {
+	r.PUT("/uploadRepo", func(c *gin.Context) {
 		// 獲取上傳的檔案
 		file, err := c.FormFile("file")
 		if err != nil {
@@ -135,7 +146,15 @@ func main() {
 		// 设置 kubeconfig 文件的路径
 
 		// 调用 utils.ListReleases 函数
-		result, _ := utils.ListReleases("/tmp/test.config")
+
+		configPath := k8sConfig
+
+		if _, err := os.Stat(configPath); os.IsNotExist(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "config file not found"})
+			return
+		}
+
+		result, _ := utils.ListReleases(configPath)
 
 		// 返回 JSON 格式的响应
 		c.JSON(http.StatusOK, result)
@@ -143,9 +162,14 @@ func main() {
 
 	r.GET("/listPods", func(c *gin.Context) {
 		// 设置 kubeconfig 文件的路径
+		configPath := k8sConfig
 
+		if _, err := os.Stat(configPath); os.IsNotExist(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "config file not found"})
+			return
+		}
 		// 调用 utils.ListReleases 函数
-		result, _ := utils.ListPods("/tmp/test.config")
+		result, _ := utils.ListPods(configPath)
 
 		// 返回 JSON 格式的响应
 		c.JSON(http.StatusOK, result)
@@ -155,7 +179,7 @@ func main() {
 		// 设置 kubeconfig 文件的路径
 
 		// 调用 utils.ListReleases 函数
-		result, err := utils.RunHelmDiff("test1", "/tmp/release/nginx-18.3.5.tgz", "vscode-server", "/tmp/test.config")
+		result, err := utils.RunHelmDiff("test1", "/tmp/release/nginx-18.3.5.tgz", "vscode-server", k8sConfig)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, result)
@@ -178,6 +202,11 @@ func main() {
 			return
 		}
 
+		if _, err := os.Stat(k8sConfig); os.IsNotExist(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "config file not found"})
+			return
+		}
+
 		// 调用升级函数
 		result, err := utils.UpgradeRelease(
 			"my-local-repo",
@@ -186,7 +215,7 @@ func main() {
 			req.ChartName,
 			"values.yaml",
 			req.Namespace,
-			"/tmp/test.config",
+			k8sConfig,
 		)
 
 		if err != nil {
@@ -210,6 +239,13 @@ func main() {
 			return
 		}
 
+		configPath := k8sConfig
+
+		if _, err := os.Stat(configPath); os.IsNotExist(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "config file not found"})
+			return
+		}
+
 		// 调用升级函数
 		result, err := utils.RollbackRelease(
 			"my-local-repo",
@@ -218,7 +254,7 @@ func main() {
 			req.ChartName,
 			"values.yaml",
 			req.Namespace,
-			"/tmp/test.config",
+			configPath,
 		)
 
 		if err != nil {

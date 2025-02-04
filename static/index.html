@@ -51,8 +51,6 @@
                                     <th>ChartName</th>
                                     <th>Namespace</th>
                                     <th>Chart Version </th>
-                                    <th>App Version</th>
-                                    <th>Version</th>
                                     <th>Last Deployed Time</th>
                                     <th>New Chart Version </th>
                                     <th>NeedUpdate</th>
@@ -74,7 +72,7 @@
                         <label for="fileRelease" class="form-label">Select Release File:</label>
                         <input type="file" class="form-control" id="fileRelease" name="file" required>
                     </div>
-                    <button type="button" class="btn btn-primary" onclick="uploadRelease()">Upload Release</button>
+                    <button type="button" class="btn btn-primary" onclick="uploadRepo()">Upload Release</button>
                 </form>
 
                 <div id="response" class="mt-3">
@@ -184,7 +182,8 @@
                 uploadConfig: '/uploadConfig',
                 listRelease: '/listRelease',
                 listPods: '/listPods',
-                uploadRelease: '/uploadRelease',
+                listRepo: '/listRepo',
+                uploadRepo: '/uploadRepo',
                 diffRelease: '/diffRelease',
                 upgradeRelease: '/upgradeRelease',
                 rollbackRelease: '/rollbackRelease'
@@ -229,6 +228,9 @@
                 data.forEach(release => {
                     const row = document.createElement('tr');
 
+
+                    /*<td>${release.appversion}</td>*/
+                    /*<td>${release.version}</td>*/
                     row.innerHTML = `
                         <td>${release.name}</td>
                         <td class="${release.status.trim() === 'deployed' ? 'table-success' : 'table-danger'}" 
@@ -238,8 +240,7 @@
                         <td>${release.chartname}</td>
                         <td>${release.namespace}</td>
                         <td>${release.chartversion}</td>
-                        <td>${release.appversion}</td>
-                        <td>${release.version}</td>
+                       
                         <td>${release.lastdeployedtime}</td>
                         <td>${release.newchartversion}</td>
                         <td class="${release.needupdate ? 'table-warning' : ''}">
@@ -386,7 +387,37 @@
             });
         }
 
-        async function uploadRelease() {
+
+        async function listRepo() {
+            document.getElementById('listRepoResult').innerHTML = '';
+            try {
+                const response = await fetch(config.baseURL + config.endpoints.listRepo, {
+                    method: 'GET',
+                });
+
+                const data = await response.json();
+                data.forEach(pod => {
+                    const tableBody = document.getElementById('listRepoResult');
+                    const row = document.createElement('tr');
+
+                    row.innerHTML = `
+                        <td>${pod.name}</td>
+                        <td>${pod.chartversion}</td>
+                        <td>${pod.appVersion}</td>
+                        <td>${pod.description}</td>
+                    `;
+
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                responseReleaseElement.textContent = `Error: ${error.message}`;
+            }
+
+        }
+        listRepo()
+
+
+        async function uploadRepo() {
             const fileInput = document.getElementById('fileRelease');
             const file = fileInput.files[0];
 
@@ -397,11 +428,12 @@
 
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
+            
 
+            
             document.getElementById('listRepoResult').innerHTML = '';
-
             try {
-                const response = await fetch(config.baseURL + config.endpoints.uploadRelease, {
+                const response = await fetch(config.baseURL + config.endpoints.uploadRepo, {
                     method: 'PUT',
                     body: formData,
                 });
