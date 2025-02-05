@@ -21,6 +21,7 @@ type UpgradeRequest struct {
 func main() {
 
 	k8sConfig := "/tmp/config.yaml"
+	repourl := "http://127.0.0.1:8888/static/repo"
 
 	// 初始化 Gin 引擎
 	r := gin.Default()
@@ -42,19 +43,26 @@ func main() {
 		// 設定儲存路徑
 		//savePath := filepath.Join("/tmp", filepath.Base(file.Filename))
 
-		// 將檔案儲存到指定目錄
-		if err := c.SaveUploadedFile(file, k8sConfig); err != nil {
+		// 先儲存到 test-config.yaml
+		if err := c.SaveUploadedFile(file, "/tmp/test-config.yaml"); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "無法儲存檔案: " + err.Error()})
 			return
 		}
 
-		err = os.Setenv("KUBECONFIG", k8sConfig)
+		// 檢查 test-config 狀態
+		err = utils.CheckK8sConfig("/tmp/test-config.yaml")
+
+		// 檢查異常後跳出
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "無法設定 KUBECONFIG: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "K8sConfig 檢查失敗", "path": err.Error()})
 			return
 		}
 
-		//utils.UpdateRepolist()
+		// 檢查成功後除存到 /tmp/config.yaml
+		if err := c.SaveUploadedFile(file, k8sConfig); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "無法儲存檔案: " + err.Error()})
+			return
+		}
 
 		// 返回成功訊息
 		c.JSON(http.StatusOK, gin.H{"message": "檔案上傳成功", "path": k8sConfig})
@@ -62,10 +70,14 @@ func main() {
 
 	r.GET("/listRepo", func(c *gin.Context) {
 
-		test, _ := utils.GetRepolist("my-local-repo", "http://127.0.0.1:8888/static/repo")
+		repolist, err := utils.GetRepolist("my-local-repo", repourl)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, err.Error())
+		}
 
 		// 返回成功訊息
-		c.JSON(http.StatusOK, test)
+		c.JSON(http.StatusOK, repolist)
 
 	})
 
@@ -105,7 +117,7 @@ func main() {
 				break // 解壓完成
 			}
 			if err != nil {
-				c.String(http.StatusInternalServerError, "Error reading tar file")
+				c.JSON(http.StatusOK, gin.H{"message": "Error reading tar file"})
 				return
 			}
 
@@ -114,18 +126,18 @@ func main() {
 			switch header.Typeflag {
 			case tar.TypeDir: // 建立目錄
 				if err := os.MkdirAll(targetPath, 0755); err != nil {
-					c.String(http.StatusInternalServerError, "Error creating directory")
+					c.JSON(http.StatusInternalServerError, gin.H{"message": "Error creating directory"})
 					return
 				}
 			case tar.TypeReg: // 寫入檔案
 				outFile, err := os.Create(targetPath)
 				if err != nil {
-					c.String(http.StatusInternalServerError, "Error creating file")
+					c.JSON(http.StatusInternalServerError, gin.H{"message": "Error creating file"})
 					return
 				}
 				if _, err := io.Copy(outFile, tarReader); err != nil {
 					outFile.Close()
-					c.String(http.StatusInternalServerError, "Error writing file")
+					c.JSON(http.StatusInternalServerError, gin.H{"message": "Error writing file"})
 					return
 				}
 				outFile.Close()
@@ -134,12 +146,13 @@ func main() {
 			}
 		}
 
-		utils.UpdateRepolist("my-local-repo", "http://127.0.0.1:8888/static/repo")
+		err = utils.UpdateRepolist("my-local-repo", repourl)
+		if err != nil {
 
-		test, _ := utils.GetRepolist("my-local-repo", "http://127.0.0.1:8888/static/repo")
-
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		}
 		// 返回成功訊息
-		c.JSON(http.StatusOK, test)
+		c.JSON(http.StatusOK, gin.H{"message": "repo 更新成功"})
 	})
 
 	r.GET("/listRelease", func(c *gin.Context) {
@@ -210,7 +223,7 @@ func main() {
 		// 调用升级函数
 		result, err := utils.UpgradeRelease(
 			"my-local-repo",
-			"http://127.0.0.1:8888/static/repo",
+			repourl,
 			req.ReleaseName,
 			req.ChartName,
 			"values.yaml",
@@ -249,7 +262,7 @@ func main() {
 		// 调用升级函数
 		result, err := utils.RollbackRelease(
 			"my-local-repo",
-			"http://127.0.0.1:8888/static/repo",
+			repourl,
 			req.ReleaseName,
 			req.ChartName,
 			"values.yaml",

@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/Masterminds/semver"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/getter"
@@ -49,11 +50,53 @@ type HelmRepoPackage struct {
 	Description  string `json:"description"`
 }
 
+func CheckK8sConfig(path string) error {
+	config, err := clientcmd.BuildConfigFromFlags("", path)
+	if err != nil {
+		return fmt.Errorf("無法載入 kubeconfig: %w", err)
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return fmt.Errorf("無法建立 Kubernetes 客戶端: %w", err)
+	}
+
+	// 嘗試存取 Kubernetes API，測試連線
+	_, err = clientset.ServerVersion()
+	if err != nil {
+		return fmt.Errorf("無法連線到 Kubernetes API: %w", err)
+	}
+
+	fmt.Println("Kubernetes 配置正常，連線成功！")
+	return nil
+}
+
+func isNewerVersion(pkgVersion, currentVersion string) (bool, string) {
+	// 解析版本号
+	pkgVer, err := semver.NewVersion(pkgVersion)
+	if err != nil {
+		log.Fatalf("Invalid package version: %v", err)
+	}
+
+	currVer, err := semver.NewVersion(currentVersion)
+	if err != nil {
+		log.Fatalf("Invalid current version: %v", err)
+	}
+
+	// 如果 pkgVersion > currentVersion，返回 true 和 pkgVersion
+	if pkgVer.GreaterThan(currVer) {
+		return true, pkgVersion
+	}
+	return false, ""
+}
+
 // ListReleases 列出 Helm Releases 并存入结构体
 func findPackageByName(packages []HelmRepoPackage, name string, currentversion string) (bool, string) {
 	for _, pkg := range packages {
 		if pkg.Name == name {
-			if pkg.ChartVersion != currentversion {
+
+			if newer, version := isNewerVersion(pkg.ChartVersion, currentversion); newer {
+				fmt.Printf("Found newer version: %s\n", version)
 				return true, pkg.ChartVersion
 			}
 		}
@@ -210,7 +253,7 @@ func RunHelmDiff(release, chartPath, namespace string, configPath string) (strin
 	return string(output), nil
 }
 
-func UpdateRepolist(repoName string, repoURL string) {
+func UpdateRepolist(repoName string, repoURL string) error {
 	// 設定 repository 的基本信息
 
 	entry := &repo.Entry{
@@ -228,12 +271,14 @@ func UpdateRepolist(repoName string, repoURL string) {
 	repository, err := repo.NewChartRepository(entry, providers)
 	if err != nil {
 		log.Fatalf("Failed to create chart repository: %v", err)
+		return err
 	}
 
 	// 嘗試下載 index 文件
 	_, err = repository.DownloadIndexFile()
 	if err != nil {
 		log.Fatalf("Failed to download index file: %v", err)
+		return err
 	}
 
 	// 創建 Helm repository 配置文件實例
@@ -249,6 +294,7 @@ func UpdateRepolist(repoName string, repoURL string) {
 	err = repoFile.WriteFile(repoFilePath, 0644)
 	if err != nil {
 		log.Fatalf("Failed to write repository file: %v", err)
+		return err
 	}
 
 	// 提示信息
@@ -258,6 +304,7 @@ func UpdateRepolist(repoName string, repoURL string) {
 	repositories, err := repo.LoadFile(repoFilePath)
 	if err != nil {
 		log.Fatalf("Failed to load repository file: %v", err)
+		return err
 	}
 
 	// 列出所有已添加的 repositories
@@ -267,6 +314,7 @@ func UpdateRepolist(repoName string, repoURL string) {
 		repository, err := repo.NewChartRepository(repoEntry, providers)
 		if err != nil {
 			log.Fatalf("Failed to create chart repository for %s: %v", repoEntry.Name, err)
+			return err
 		}
 
 		fmt.Printf("Name: %s, URL: %s\n", repoEntry.Name, repoEntry.URL)
@@ -275,17 +323,20 @@ func UpdateRepolist(repoName string, repoURL string) {
 		_, err = repository.DownloadIndexFile()
 		if err != nil {
 			log.Fatalf("Failed to download index for repository %s: %v", repoEntry.Name, err)
+			return err
 		} else {
 			fmt.Printf("Repository %s updated successfully.\n", repoEntry.Name)
 		}
 	}
+
+	return nil
 }
 
 func GetRepolist(repoName string, repoURL string) ([]HelmRepoPackage, error) {
 	// 初始化 Helm 配置
 	settings := cli.New()
 
-	// 添加仓库到 Helm 配置
+	// 新增配置到 helm repo
 	entry := &repo.Entry{
 		Name: repoName,
 		URL:  repoURL,

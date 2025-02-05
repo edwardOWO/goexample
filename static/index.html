@@ -65,7 +65,7 @@
 
         <!-- Upload Release -->
         <div class="card mb-4">
-            <div class="card-header">Upload Release</div>
+            <div class="card-header">Upload Repo</div>
             <div class="card-body">
                 <form id="uploadForm">
                     <div class="mb-3">
@@ -438,23 +438,16 @@
                     body: formData,
                 });
 
+
+                
                 const data = await response.json();
-                data.forEach(pod => {
-                    const tableBody = document.getElementById('listRepoResult');
-                    const row = document.createElement('tr');
-
-                    row.innerHTML = `
-                        <td>${pod.name}</td>
-                        <td>${pod.chartversion}</td>
-                        <td>${pod.appVersion}</td>
-                        <td>${pod.description}</td>
-                    `;
-
-                    tableBody.appendChild(row);
-                });
+                alert (data.message)
+            
+                
             } catch (error) {
-                responseReleaseElement.textContent = `Error: ${error.message}`;
             }
+
+            listRepo()
         }
 
         async function diffRelease() {
