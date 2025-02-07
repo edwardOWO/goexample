@@ -1,5 +1,0 @@
-FROM alpine:latest
-
-
-# Define the default command to run when the container starts
-CMD ["bash"]
