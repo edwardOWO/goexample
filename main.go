@@ -22,6 +22,7 @@ func main() {
 
 	k8sConfig := "/tmp/config.yaml"
 	repourl := "http://127.0.0.1:8888/static/repo"
+	values := "values.yaml"
 
 	// 初始化 Gin 引擎
 	r := gin.Default()
@@ -192,7 +193,7 @@ func main() {
 		// 设置 kubeconfig 文件的路径
 
 		// 调用 utils.ListReleases 函数
-		result, err := utils.RunHelmDiff("test1", "/tmp/release/nginx-18.3.5.tgz", "vscode-server", k8sConfig)
+		result, err := utils.RunHelmDiff("my-local-repo", "juiker-backend", "0.2.1", "0.2.3", k8sConfig)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, result)
@@ -226,7 +227,7 @@ func main() {
 			repourl,
 			req.ReleaseName,
 			req.ChartName,
-			"values.yaml",
+			values,
 			req.Namespace,
 			k8sConfig,
 		)
@@ -265,7 +266,7 @@ func main() {
 			repourl,
 			req.ReleaseName,
 			req.ChartName,
-			"values.yaml",
+			values,
 			req.Namespace,
 			configPath,
 		)

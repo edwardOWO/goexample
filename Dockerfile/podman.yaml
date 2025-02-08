@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: podman
+  labels:
+    app: podman
+spec:
+  containers:
+    - name: podman
+      image: quay.io/podman/stable
+      command: ["sleep", "infinity"]
+      securityContext:
+        privileged: true

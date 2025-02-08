@@ -237,12 +237,19 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 	return podList, nil
 }
 
-func RunHelmDiff(release, chartPath, namespace string, configPath string) (string, error) {
+func RunHelmDiff(repo string, chartPath string, newVersion string, oldVersion string, configPath string) (string, error) {
 	// 准备 Helm diff 命令
-	cmd := exec.Command("helm", "diff", "upgrade", release, chartPath, "--namespace", namespace, "--kubeconfig", configPath)
+	cmd := exec.Command("helm", "pull", repo+"/"+chartPath, "--version", newVersion, "--kubeconfig", configPath)
 
 	// 执行命令
 	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Helm diff 执行失败: %s", string(output))
+		return "", err
+	}
+
+	cmd = exec.Command("helm", "pull", repo+"/"+chartPath, "--version", oldVersion, "--kubeconfig", configPath)
+	output, err = cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("Helm diff 执行失败: %s", string(output))
 		return "", err
