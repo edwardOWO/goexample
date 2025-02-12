@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/tar"
+	"fmt"
 	"goexample/utils"
 	"io"
 	"log"
@@ -22,7 +23,27 @@ func main() {
 
 	k8sConfig := "/tmp/config.yaml"
 	repourl := "http://127.0.0.1:8888/static/repo"
-	values := "values.yaml"
+
+	version := os.Getenv("VERSION")
+
+	if version == "" {
+		version = "test"
+	}
+
+	customer := os.Getenv("CUSTOMER")
+	values := ""
+
+	if customer != "" {
+		values = fmt.Sprintf("%s.yaml", customer)
+	} else {
+		customer = "測試用戶"
+		values = "test.yaml"
+	}
+
+	baseURL := os.Getenv("BASEURL")
+	if baseURL == "" {
+		baseURL = "/vscode/proxy/8888"
+	}
 
 	// 初始化 Gin 引擎
 	r := gin.Default()
@@ -31,6 +52,15 @@ func main() {
 	// 提供靜態資源目錄，用於提供 HTML 測試介面
 	r.Static("/static", "./static")
 	r.Static("/repo", "./static/repo")
+
+	r.LoadHTMLGlob("template/*")
+	r.GET("/index", func(c *gin.Context) {
+		c.HTML(200, "index.html", gin.H{
+			"baseURL":  baseURL,
+			"customer": customer,
+			"version":  version,
+		})
+	})
 
 	// 處理檔案上傳的路由
 	r.PUT("/uploadConfig", func(c *gin.Context) {
