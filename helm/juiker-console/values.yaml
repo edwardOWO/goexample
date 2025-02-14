@@ -16,7 +16,7 @@ image:
 
 env:
   BASEURL: https://sat-k8s-pix.baby.juiker.net/update
-  CUSTOMER: falcom
+  CUSTOMER: ""
 
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []

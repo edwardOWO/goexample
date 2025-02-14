@@ -407,7 +407,7 @@ func UpgradeRelease(repoName, repoURL, releaseName, chartName string, valuesName
 
 	cmd := exec.Command("helm", "pull", repoName+"/"+chartName, "--kubeconfig", kubeconfig)
 
-	// 执行命令
+	// 執行命令
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("Helm pull 执行失败: %s", string(output))
@@ -423,13 +423,13 @@ func UpgradeRelease(repoName, repoURL, releaseName, chartName string, valuesName
 		return "", err
 	}
 
-	// 初始化 Helm 设置
+	// 更新指令
 	cmd = exec.Command("helm", "upgrade", releaseName, "./"+chartName, "--namespace", namespace, "-f", "./"+chartName+"/"+valuesName, "--kubeconfig", kubeconfig)
 
 	log.Printf("执行命令: %s", strings.Join(cmd.Args, " "))
 
-	// 执行命令
-	output, err = cmd.CombinedOutput()
+	// 更新
+	updateResult, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("Helm diff 执行失败: %s", string(output))
 		return "", err
@@ -438,7 +438,18 @@ func UpgradeRelease(repoName, repoURL, releaseName, chartName string, valuesName
 	// 打印输出
 	log.Printf("Helm diff 执行成功: %s", string(output))
 
-	return string(output), nil
+	// 刪除安裝包
+	cmd = exec.Command("rm", "-rf", chartName, chartPackageName)
+
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("rm 執行失敗: %s", string(output))
+		return "", err
+	}
+
+	log.Printf("执行命令: %s", strings.Join(cmd.Args, " "))
+
+	return string(updateResult), nil
 
 }
 

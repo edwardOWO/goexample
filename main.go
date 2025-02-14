@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/gin-gonic/gin"
@@ -26,7 +27,7 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		// 如果 Cookie 不存在，或帳密不正確，則返回 401
 		if err1 != nil || err2 != nil || username != "admin" || password != "password123" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "未授權，請先登入"})
+			c.Redirect(http.StatusFound, "/login")
 			c.Abort() // 阻止後續處理
 			return
 		}
@@ -74,6 +75,20 @@ func main() {
 		c.HTML(200, "login.html", gin.H{
 			"baseURL": baseURL,
 		})
+	})
+	r.POST("/logout", func(c *gin.Context) {
+		// 移除 Cookie
+
+		cmd := exec.Command("bash", "-c", "rm -rf /tmp/*")
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Printf("%s 失敗", string(output))
+		}
+
+		c.SetCookie("username", "", -1, "/", "", false, true)
+		c.SetCookie("password", "", -1, "/", "", false, true)
+		// 轉跳到 /login 頁面
+		c.Redirect(http.StatusFound, "/login")
 	})
 
 	r.GET("/index", AuthMiddleware(), func(c *gin.Context) {

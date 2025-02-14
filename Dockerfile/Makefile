@@ -1,5 +1,5 @@
 
-VERSION := 0.7.0
+VERSION := 0.12.0
 prepare:
 	kubectl create -f podman.yaml
 
@@ -20,7 +20,6 @@ build-image:
 	kubectl cp Dockerfile podman:/Dockerfile
 	kubectl exec -it podman -- podman build -t harbor-sat.baby.juiker.net/test/test:$(VERSION) .
 	kubectl exec -it podman -- podman push harbor-sat.baby.juiker.net/test/test:$(VERSION)
-	kubectl rollout restart deployment alpine-bash-deployment
 	cd ../helm/juiker-console/ && helm package . --version $(VERSION)
 	mv ../helm/juiker-console/juiker-console-$(VERSION).tgz .
 

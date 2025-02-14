@@ -9,6 +9,14 @@
 </head>
 <body>
 
+    <!-- 新增登出按鈕 -->
+    <nav class="position-absolute top-0 end-0 m-3">
+        <button class="btn btn-danger px-4 py-2 shadow-sm rounded-pill" onclick="logout()">登出</button>
+    </nav>
+
+
+
+
     <div class="container my-5">
         <h1 class="text-center mb-4">Helm 維運介面測試 {{.version}}</h1>
         <h1 class="text-center mb-4">顧客名稱:{{.customer}}</h1>
@@ -185,7 +193,8 @@
                 uploadRepo: '/uploadRepo',
                 diffRelease: '/diffRelease',
                 upgradeRelease: '/upgradeRelease',
-                rollbackRelease: '/rollbackRelease'
+                rollbackRelease: '/rollbackRelease',
+                logout: '/logout',
             }
         };
 
@@ -478,6 +487,19 @@
                 document.getElementById('upgradeReleaseResult').textContent = `Error: ${error.message}`;
             }
         }
+
+        async function logout() {
+
+            try {
+                const response = await fetch(config.baseURL + config.endpoints.logout, {
+                    method: 'POST',
+                });
+            } catch (error) {
+            }
+        }
+
+
+
     </script>
 </body>
 </html>
