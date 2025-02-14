@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/Masterminds/semver"
@@ -96,7 +97,7 @@ func findPackageByName(packages []HelmRepoPackage, name string, currentversion s
 		if pkg.Name == name {
 
 			if newer, version := isNewerVersion(pkg.ChartVersion, currentversion); newer {
-				fmt.Printf("Found newer version: %s\n", version)
+				fmt.Printf("Found newer version: %s packageName %s \n", version, pkg.Name)
 				return true, pkg.ChartVersion
 			}
 		}
@@ -135,7 +136,7 @@ func ListReleases(kubeconfig string) ([]Release, error) {
 	}
 
 	// 输出结果
-	fmt.Println("查询到的 Helm Releases:")
+	//fmt.Println("查询到的 Helm Releases:")
 	var releaseList []Release
 	if len(releases) == 0 {
 		fmt.Println("没有找到已部署的 Release")
@@ -162,13 +163,13 @@ func ListReleases(kubeconfig string) ([]Release, error) {
 		}
 
 		// 将结构体数据转换为 JSON 格式并输出
-		jsonData, err := json.MarshalIndent(releaseList, "", "  ")
+		_, err := json.MarshalIndent(releaseList, "", "  ")
 		if err != nil {
 			log.Fatalf("无法将 Releases 转换为 JSON: %v", err)
 		}
 
-		fmt.Println("Release 数据的 JSON 表示:")
-		fmt.Println(string(jsonData))
+		//fmt.Println("Release 数据的 JSON 表示:")
+		//fmt.Println(string(jsonData))
 	}
 	return releaseList, nil
 }
@@ -198,7 +199,7 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 	}
 
 	// 输出结果
-	fmt.Println("查询到的 Pods 状态:")
+	//fmt.Println("查询到的 Pods 状态:")
 	var podList []PodStatus
 	if len(pods.Items) == 0 {
 		fmt.Println("没有找到 Pod")
@@ -226,13 +227,13 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 		}
 
 		// 将结构体数据转换为 JSON 格式并输出
-		jsonData, err := json.MarshalIndent(podList, "", "  ")
+		_, err := json.MarshalIndent(podList, "", "  ")
 		if err != nil {
 			log.Fatalf("无法将 Pods 转换为 JSON: %v", err)
 		}
 
-		fmt.Println("Pods 数据的 JSON 表示:")
-		fmt.Println(string(jsonData))
+		//fmt.Println("Pods 数据的 JSON 表示:")
+		//fmt.Println(string(jsonData))
 	}
 	return podList, nil
 }
@@ -386,15 +387,14 @@ func RollbackRelease(repoName, repoURL, releaseName, chartName string, valuesNam
 	// 初始化 Helm 设置
 	cmd := exec.Command("helm", "rollback", releaseName, "--namespace", namespace, "--kubeconfig", kubeconfig)
 
+	log.Printf("执行命令: %s", strings.Join(cmd.Args, " "))
+
 	// 执行命令
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("Helm diff 执行失败: %s", string(output))
 		return "", err
 	}
-
-	// 打印输出
-	log.Printf("Helm diff 执行成功: %s", string(output))
 
 	return string(output), nil
 
@@ -425,6 +425,8 @@ func UpgradeRelease(repoName, repoURL, releaseName, chartName string, valuesName
 
 	// 初始化 Helm 设置
 	cmd = exec.Command("helm", "upgrade", releaseName, "./"+chartName, "--namespace", namespace, "-f", "./"+chartName+"/"+valuesName, "--kubeconfig", kubeconfig)
+
+	log.Printf("执行命令: %s", strings.Join(cmd.Args, " "))
 
 	// 执行命令
 	output, err = cmd.CombinedOutput()

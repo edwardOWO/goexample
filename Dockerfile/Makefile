@@ -1,5 +1,5 @@
 
-VERSION := 0.4.0
+VERSION := 0.6.0
 prepare:
 	kubectl create -f podman.yaml
 

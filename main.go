@@ -19,6 +19,21 @@ type UpgradeRequest struct {
 	Namespace   string `json:"namespace"`
 }
 
+func AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		username, err1 := c.Cookie("username")
+		password, err2 := c.Cookie("password")
+
+		// 如果 Cookie 不存在，或帳密不正確，則返回 401
+		if err1 != nil || err2 != nil || username != "admin" || password != "password123" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "未授權，請先登入"})
+			c.Abort() // 阻止後續處理
+			return
+		}
+
+		c.Next() // 通過驗證，繼續請求處理
+	}
+}
 func main() {
 
 	k8sConfig := "/tmp/config.yaml"
@@ -37,7 +52,7 @@ func main() {
 		values = fmt.Sprintf("%s.yaml", customer)
 	} else {
 		customer = "測試用戶"
-		values = "test.yaml"
+		values = "values.yaml"
 	}
 
 	baseURL := os.Getenv("BASEURL")
@@ -54,7 +69,14 @@ func main() {
 	r.Static("/repo", "./static/repo")
 
 	r.LoadHTMLGlob("template/*")
-	r.GET("/index", func(c *gin.Context) {
+
+	r.GET("/login", func(c *gin.Context) {
+		c.HTML(200, "login.html", gin.H{
+			"baseURL": baseURL,
+		})
+	})
+
+	r.GET("/index", AuthMiddleware(), func(c *gin.Context) {
 		c.HTML(200, "index.html", gin.H{
 			"baseURL":  baseURL,
 			"customer": customer,
@@ -62,8 +84,34 @@ func main() {
 		})
 	})
 
+	// 登入驗證
+	r.POST("/login", func(c *gin.Context) {
+		// 解析請求的帳號和密碼
+		var req struct {
+			Username string `form:"username"`
+			Password string `form:"password"`
+		}
+		if err := c.ShouldBind(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "無效的輸入"})
+			return
+		}
+
+		// 驗證帳號密碼 (這裡你可以換成查詢資料庫)
+		if req.Username == "admin" && req.Password == "password123" {
+			// 登入成功，設定 Cookie
+			c.SetCookie("username", req.Username, 3600, "/", "", false, true)
+			c.SetCookie("password", req.Password, 3600, "/", "", false, true)
+
+			// 返回登入成功訊息
+			c.JSON(http.StatusOK, gin.H{"message": "登入成功"})
+		} else {
+			// 登入失敗
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "帳號或密碼錯誤"})
+		}
+	})
+
 	// 處理檔案上傳的路由
-	r.PUT("/uploadConfig", func(c *gin.Context) {
+	r.PUT("/uploadConfig", AuthMiddleware(), func(c *gin.Context) {
 		// 獲取上傳的檔案
 		file, err := c.FormFile("file")
 		if err != nil {
@@ -99,7 +147,7 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"message": "檔案上傳成功", "path": k8sConfig})
 	})
 
-	r.GET("/listRepo", func(c *gin.Context) {
+	r.GET("/listRepo", AuthMiddleware(), func(c *gin.Context) {
 
 		repolist, err := utils.GetRepolist("my-local-repo", repourl)
 
@@ -113,7 +161,7 @@ func main() {
 	})
 
 	// 處理檔案上傳的路由
-	r.PUT("/uploadRepo", func(c *gin.Context) {
+	r.PUT("/uploadRepo", AuthMiddleware(), func(c *gin.Context) {
 		// 獲取上傳的檔案
 		file, err := c.FormFile("file")
 		if err != nil {
@@ -186,7 +234,7 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"message": "repo 更新成功"})
 	})
 
-	r.GET("/listRelease", func(c *gin.Context) {
+	r.GET("/listRelease", AuthMiddleware(), func(c *gin.Context) {
 		// 设置 kubeconfig 文件的路径
 
 		// 调用 utils.ListReleases 函数
@@ -204,7 +252,7 @@ func main() {
 		c.JSON(http.StatusOK, result)
 	})
 
-	r.GET("/listPods", func(c *gin.Context) {
+	r.GET("/listPods", AuthMiddleware(), func(c *gin.Context) {
 		// 设置 kubeconfig 文件的路径
 		configPath := k8sConfig
 
@@ -219,7 +267,7 @@ func main() {
 		c.JSON(http.StatusOK, result)
 	})
 
-	r.POST("/diffRelease", func(c *gin.Context) {
+	r.POST("/diffRelease", AuthMiddleware(), func(c *gin.Context) {
 		// 设置 kubeconfig 文件的路径
 
 		// 调用 utils.ListReleases 函数
@@ -234,7 +282,7 @@ func main() {
 		c.String(http.StatusOK, result)
 	})
 
-	r.POST("/upgradeRelease", func(c *gin.Context) {
+	r.POST("/upgradeRelease", AuthMiddleware(), func(c *gin.Context) {
 
 		// 设置 kubeconfig 文件的路径
 
@@ -271,7 +319,7 @@ func main() {
 		c.String(http.StatusOK, result)
 	})
 
-	r.POST("/rollbackRelease", func(c *gin.Context) {
+	r.POST("/rollbackRelease", AuthMiddleware(), func(c *gin.Context) {
 
 		// 设置 kubeconfig 文件的路径
 
