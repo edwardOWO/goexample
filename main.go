@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -79,7 +80,9 @@ func main() {
 	r.POST("/logout", func(c *gin.Context) {
 		// 移除 Cookie
 
-		cmd := exec.Command("bash", "-c", "rm -rf /tmp/*")
+		cmd := exec.Command("rm", "/tmp/config.yaml", "/tmp/test-config.yaml")
+
+		log.Printf("执行命令: %s", strings.Join(cmd.Args, " "))
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			log.Printf("%s 失敗", string(output))
