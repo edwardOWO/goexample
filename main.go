@@ -36,31 +36,74 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Next() // 通過驗證，繼續請求處理
 	}
 }
+
+type Config struct {
+	K8sConfig string
+	RepoURL   string
+	RepoName  string
+	Version   string
+	Customer  string
+	BaseURL   string
+	Values    string
+}
+
+func getEnv(key, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return defaultValue
+}
+func loadConfig() Config {
+	version := getEnv("VERSION", "test")
+	customer := getEnv("CUSTOMER", "測試用戶")
+
+	values := "values.yaml"
+	if customer != "測試用戶" {
+		values = fmt.Sprintf("%s.yaml", customer)
+	}
+
+	baseURL := getEnv("BASEURL", "/vscode/proxy/8888")
+
+	return Config{
+		K8sConfig: "/tmp/config.yaml",
+		RepoURL:   "http://127.0.0.1:8888/static/repo",
+		RepoName:  "my-local-repo",
+		Version:   version,
+		Customer:  customer,
+		BaseURL:   baseURL,
+		Values:    values,
+	}
+}
+
 func main() {
 
-	k8sConfig := "/tmp/config.yaml"
-	repourl := "http://127.0.0.1:8888/static/repo"
+	/*
+		k8sConfig := "/tmp/config.yaml"
+		repourl := "http://127.0.0.1:8888/static/repo"
 
-	version := os.Getenv("VERSION")
+		version := os.Getenv("VERSION")
 
-	if version == "" {
-		version = "test"
-	}
+		if version == "" {
+			version = "test"
+		}
 
-	customer := os.Getenv("CUSTOMER")
-	values := ""
+		customer := os.Getenv("CUSTOMER")
+		values := ""
 
-	if customer != "" {
-		values = fmt.Sprintf("%s.yaml", customer)
-	} else {
-		customer = "測試用戶"
-		values = "values.yaml"
-	}
+		if customer != "" {
+			values = fmt.Sprintf("%s.yaml", customer)
+		} else {
+			customer = "測試用戶"
+			values = "values.yaml"
+		}
 
-	baseURL := os.Getenv("BASEURL")
-	if baseURL == "" {
-		baseURL = "/vscode/proxy/8888"
-	}
+		baseURL := os.Getenv("BASEURL")
+		if baseURL == "" {
+			baseURL = "/vscode/proxy/8888"
+		}
+	*/
+
+	config := loadConfig()
 
 	// 初始化 Gin 引擎
 	r := gin.Default()
@@ -74,7 +117,7 @@ func main() {
 
 	r.GET("/login", func(c *gin.Context) {
 		c.HTML(200, "login.html", gin.H{
-			"baseURL": baseURL,
+			"baseURL": config.BaseURL,
 		})
 	})
 	r.POST("/logout", func(c *gin.Context) {
@@ -96,9 +139,9 @@ func main() {
 
 	r.GET("/index", AuthMiddleware(), func(c *gin.Context) {
 		c.HTML(200, "index.html", gin.H{
-			"baseURL":  baseURL,
-			"customer": customer,
-			"version":  version,
+			"baseURL":  config.BaseURL,
+			"customer": config.Customer,
+			"version":  config.Version,
 		})
 	})
 
@@ -156,18 +199,18 @@ func main() {
 		}
 
 		// 檢查成功後除存到 /tmp/config.yaml
-		if err := c.SaveUploadedFile(file, k8sConfig); err != nil {
+		if err := c.SaveUploadedFile(file, config.K8sConfig); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "無法儲存檔案: " + err.Error()})
 			return
 		}
 
 		// 返回成功訊息
-		c.JSON(http.StatusOK, gin.H{"message": "檔案上傳成功", "path": k8sConfig})
+		c.JSON(http.StatusOK, gin.H{"message": "檔案上傳成功", "path": config.BaseURL})
 	})
 
 	r.GET("/listRepo", AuthMiddleware(), func(c *gin.Context) {
 
-		repolist, err := utils.GetRepolist("my-local-repo", repourl)
+		repolist, err := utils.GetRepolist(config.RepoName, config.RepoURL)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, err.Error())
@@ -243,7 +286,7 @@ func main() {
 			}
 		}
 
-		err = utils.UpdateRepolist("my-local-repo", repourl)
+		err = utils.UpdateRepolist(config.RepoName, config.RepoURL)
 		if err != nil {
 
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -257,10 +300,10 @@ func main() {
 
 		// 调用 utils.ListReleases 函数
 
-		configPath := k8sConfig
+		configPath := config.K8sConfig
 
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "config file not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "config file not found" + err.Error()})
 			return
 		}
 
@@ -272,10 +315,10 @@ func main() {
 
 	r.GET("/listPods", AuthMiddleware(), func(c *gin.Context) {
 		// 设置 kubeconfig 文件的路径
-		configPath := k8sConfig
+		configPath := config.K8sConfig
 
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "config file not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
 		// 调用 utils.ListReleases 函数
@@ -289,10 +332,10 @@ func main() {
 		// 设置 kubeconfig 文件的路径
 
 		// 调用 utils.ListReleases 函数
-		result, err := utils.RunHelmDiff("my-local-repo", "juiker-backend", "0.2.1", "0.2.3", k8sConfig)
+		result, err := utils.RunHelmDiff(config.RepoName, "juiker-backend", "0.2.1", "0.2.3", config.K8sConfig)
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, result)
+			c.JSON(http.StatusInternalServerError, err.Error())
 			return
 		}
 
@@ -312,24 +355,24 @@ func main() {
 			return
 		}
 
-		if _, err := os.Stat(k8sConfig); os.IsNotExist(err) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "config file not found"})
+		if _, err := os.Stat(config.K8sConfig); os.IsNotExist(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
 
 		// 调用升级函数
 		result, err := utils.UpgradeRelease(
-			"my-local-repo",
-			repourl,
+			config.RepoName,
+			config.RepoURL,
 			req.ReleaseName,
 			req.ChartName,
-			values,
+			config.Values,
 			req.Namespace,
-			k8sConfig,
+			config.K8sConfig,
 		)
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, result)
+			c.JSON(http.StatusInternalServerError, err.Error())
 			return
 		}
 
@@ -349,7 +392,7 @@ func main() {
 			return
 		}
 
-		configPath := k8sConfig
+		configPath := config.K8sConfig
 
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "config file not found"})
@@ -358,11 +401,11 @@ func main() {
 
 		// 调用升级函数
 		result, err := utils.RollbackRelease(
-			"my-local-repo",
-			repourl,
+			config.RepoName,
+			config.RepoURL,
 			req.ReleaseName,
 			req.ChartName,
-			values,
+			config.Values,
 			req.Namespace,
 			configPath,
 		)
