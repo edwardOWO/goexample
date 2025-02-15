@@ -11,8 +11,11 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/pquerna/otp/totp"
+	"github.com/skip2/go-qrcode"
 )
 
 type UpgradeRequest struct {
@@ -32,6 +35,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Abort() // 阻止後續處理
 			return
 		}
+		// 驗證 OTP
 
 		c.Next() // 通過驗證，繼續請求處理
 	}
@@ -45,6 +49,7 @@ type Config struct {
 	Customer  string
 	BaseURL   string
 	Values    string
+	OtpSecret string
 }
 
 func getEnv(key, defaultValue string) string {
@@ -72,36 +77,58 @@ func loadConfig() Config {
 		Customer:  customer,
 		BaseURL:   baseURL,
 		Values:    values,
+		OtpSecret: "JBSWY3DPEHPK3PXP",
+	}
+}
+
+func otp(secret string, otpPassword string) bool {
+	// **Step 2: 生成 OTP**
+	otpCode, err := totp.GenerateCode(secret, time.Now())
+	if err != nil {
+		log.Println("❌ 生成 OTP 失败:", err)
+		return false
+	}
+	fmt.Println("📌 当前 OTP:", otpCode)
+
+	// **Step 3: 验证 OTP**
+	valid, err := totp.ValidateCustom(otpPassword, secret, time.Now(),
+		totp.ValidateOpts{
+			Period: 30, // 30 秒 OTP
+			Skew:   1,  // 允许 1 个时间窗口偏差（±30 秒）
+			Digits: 6,
+		})
+
+	if err != nil {
+		log.Println("❌ OTP 验证错误:", err)
+		return false
+	}
+
+	if valid {
+		fmt.Println("✅ OTP 验证成功！")
+		return true
+	} else {
+		fmt.Println("❌ OTP 验证失败！")
+		return false
 	}
 }
 
 func main() {
 
-	/*
-		k8sConfig := "/tmp/config.yaml"
-		repourl := "http://127.0.0.1:8888/static/repo"
+	// Step 1: 定义 TOTP 密钥和账户信息
+	issuer := "MyApp"                 // 应用名
+	accountName := "user@example.com" // 账户名
+	secret := "JBSWY3DPEHPK3PXP"      // Base32 编码密钥
 
-		version := os.Getenv("VERSION")
+	// Step 2: 生成 TOTP URL，遵循 otpauth 格式
+	url := fmt.Sprintf("otpauth://totp/%s:%s?secret=%s&issuer=%s", issuer, accountName, secret, issuer)
 
-		if version == "" {
-			version = "test"
-		}
+	// Step 3: 生成 QR 码并保存为图片
+	err := qrcode.WriteFile(url, qrcode.Medium, 256, "qrcode.png")
+	if err != nil {
+		log.Fatal("生成 QR 码失败:", err)
+	}
 
-		customer := os.Getenv("CUSTOMER")
-		values := ""
-
-		if customer != "" {
-			values = fmt.Sprintf("%s.yaml", customer)
-		} else {
-			customer = "測試用戶"
-			values = "values.yaml"
-		}
-
-		baseURL := os.Getenv("BASEURL")
-		if baseURL == "" {
-			baseURL = "/vscode/proxy/8888"
-		}
-	*/
+	fmt.Println("QR 码已生成并保存在 qrcode.png 文件中！")
 
 	config := loadConfig()
 
@@ -151,14 +178,15 @@ func main() {
 		var req struct {
 			Username string `form:"username"`
 			Password string `form:"password"`
+			OTP      string `form:"otp"`
 		}
 		if err := c.ShouldBind(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "無效的輸入"})
 			return
 		}
 
-		// 驗證帳號密碼 (這裡你可以換成查詢資料庫)
-		if req.Username == "admin" && req.Password == "password123" {
+		// 驗證帳號密碼 (這裡你可以換成查詢資料庫),驗證OTP
+		if req.Username == "admin" && req.Password == "password123" && otp(config.OtpSecret, req.OTP) {
 			// 登入成功，設定 Cookie
 			c.SetCookie("username", req.Username, 3600, "/", "", false, true)
 			c.SetCookie("password", req.Password, 3600, "/", "", false, true)

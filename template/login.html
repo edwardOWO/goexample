@@ -70,6 +70,8 @@
             <input type="text" id="username" name="username" placeholder="請輸入帳號" required>
             <label for="password">密碼</label>
             <input type="password" id="password" name="password" placeholder="請輸入密碼" required>
+            <label for="otpcode">OTP驗證碼</label>
+            <input type="password" id="otp" name="password" placeholder="請輸入OTP" required>
             <button type="submit">登入</button>
         </form>
     </div>
@@ -88,10 +90,12 @@
 
             const username = document.getElementById("username").value;
             const password = document.getElementById("password").value;
+            const otp = document.getElementById("otp").value;
 
             const formData = new URLSearchParams();
             formData.append("username", username);
             formData.append("password", password);
+            formData.append("otp", otp);
 
             try {
                 const response = await fetch(config.baseURL + config.endpoints.loginurl, {
