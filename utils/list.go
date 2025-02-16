@@ -192,12 +192,14 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 		log.Fatalf("无法创建 Kubernetes 客户端: %v", err)
 	}
 
+	fmt.Println("test2")
+
 	// 获取所有命名空间的 Pods 列表
 	pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		log.Fatalf("无法获取 Pods 列表: %v", err)
 	}
-
+	fmt.Println("test3")
 	// 输出结果
 	//fmt.Println("查询到的 Pods 状态:")
 	var podList []PodStatus
@@ -208,6 +210,7 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 		for _, p := range pods.Items {
 
 			if string(p.Status.Phase) == "Running" {
+				fmt.Print(p.Name)
 				podList = append(podList, PodStatus{
 					Name:        p.Name,
 					Namespace:   p.Namespace,
@@ -216,24 +219,43 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 					NodeName:    p.Spec.NodeName,
 				})
 			} else {
-				podList = append(podList, PodStatus{
-					Name:        p.Name,
-					Namespace:   p.Namespace,
-					ReleaseName: p.Labels["app.kubernetes.io/instance"],
-					Status:      fmt.Sprintf("%s", p.Status.ContainerStatuses[0].State.Waiting.Reason),
-					NodeName:    p.Spec.NodeName,
-				})
+
+				fmt.Print(p.Name)
+				if len(p.Status.ContainerStatuses) > 0 {
+
+					containerStatus := p.Status.ContainerStatuses[0]
+
+					if containerStatus.State.Waiting != nil {
+						podList = append(podList, PodStatus{
+							Name:        p.Name,
+							Namespace:   p.Namespace,
+							ReleaseName: p.Labels["app.kubernetes.io/instance"],
+							Status:      fmt.Sprintf("%s", p.Status.ContainerStatuses[0].State.Waiting.Reason),
+							NodeName:    p.Spec.NodeName,
+						})
+					} else {
+						podList = append(podList, PodStatus{
+							Name:        p.Name,
+							Namespace:   p.Namespace,
+							ReleaseName: p.Labels["app.kubernetes.io/instance"],
+							Status:      fmt.Sprintf("%s", "UNKNOWN"),
+							NodeName:    p.Spec.NodeName,
+						})
+					}
+
+				}
 			}
+
 		}
 
 		// 将结构体数据转换为 JSON 格式并输出
-		_, err := json.MarshalIndent(podList, "", "  ")
+		jsonData, err := json.MarshalIndent(podList, "", "  ")
 		if err != nil {
 			log.Fatalf("无法将 Pods 转换为 JSON: %v", err)
 		}
 
-		//fmt.Println("Pods 数据的 JSON 表示:")
-		//fmt.Println(string(jsonData))
+		fmt.Println("Pods 数据的 JSON 表示:")
+		fmt.Println(string(jsonData))
 	}
 	return podList, nil
 }

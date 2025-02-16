@@ -3,6 +3,7 @@ FROM alpine:latest
 RUN apk add --no-cache tzdata openssl curl
 ENV TZ=Asia/Taipei
 RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | sh
+RUN mkdir -p /opt/log
 COPY ../goexample /goexample
 COPY ../static /static
 COPY ../template /template

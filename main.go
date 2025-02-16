@@ -15,7 +15,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/pquerna/otp/totp"
-	"github.com/skip2/go-qrcode"
 )
 
 type UpgradeRequest struct {
@@ -82,6 +81,25 @@ func loadConfig() Config {
 }
 
 func otp(secret string, otpPassword string) bool {
+
+	/*
+		// Step 1: 定义 TOTP 密钥和账户信息
+		issuer := "MyApp"                 // 应用名
+		accountName := "user@example.com" // 账户名
+		secret := "JBSWY3DPEHPK3PXP"      // Base32 编码密钥
+
+		// Step 2: 生成 TOTP URL，遵循 otpauth 格式
+		url := fmt.Sprintf("otpauth://totp/%s:%s?secret=%s&issuer=%s", issuer, accountName, secret, issuer)
+
+		// Step 3: 生成 QR 码并保存为图片
+		err := qrcode.WriteFile(url, qrcode.Medium, 256, "qrcode.png")
+		if err != nil {
+			log.Fatal("生成 QR 码失败:", err)
+		}
+
+		fmt.Println("QR 码已生成并保存在 qrcode.png 文件中！")
+	*/
+
 	// **Step 2: 生成 OTP**
 	otpCode, err := totp.GenerateCode(secret, time.Now())
 	if err != nil {
@@ -114,22 +132,6 @@ func otp(secret string, otpPassword string) bool {
 
 func main() {
 
-	// Step 1: 定义 TOTP 密钥和账户信息
-	issuer := "MyApp"                 // 应用名
-	accountName := "user@example.com" // 账户名
-	secret := "JBSWY3DPEHPK3PXP"      // Base32 编码密钥
-
-	// Step 2: 生成 TOTP URL，遵循 otpauth 格式
-	url := fmt.Sprintf("otpauth://totp/%s:%s?secret=%s&issuer=%s", issuer, accountName, secret, issuer)
-
-	// Step 3: 生成 QR 码并保存为图片
-	err := qrcode.WriteFile(url, qrcode.Medium, 256, "qrcode.png")
-	if err != nil {
-		log.Fatal("生成 QR 码失败:", err)
-	}
-
-	fmt.Println("QR 码已生成并保存在 qrcode.png 文件中！")
-
 	config := loadConfig()
 
 	// 初始化 Gin 引擎
@@ -139,6 +141,7 @@ func main() {
 	// 提供靜態資源目錄，用於提供 HTML 測試介面
 	r.Static("/static", "./static")
 	r.Static("/repo", "./static/repo")
+	//r.Static("/log", "/opt/log")
 
 	r.LoadHTMLGlob("template/*")
 
@@ -197,6 +200,50 @@ func main() {
 			// 登入失敗
 			c.JSON(http.StatusUnauthorized, gin.H{"message": "帳號或密碼錯誤"})
 		}
+	})
+
+	r.POST("/log", func(c *gin.Context) {
+
+		var req UpgradeRequest
+
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		filePath := "/opt/log/" + req.ReleaseName
+
+		// 确保目录存在
+		dir := filepath.Dir(filePath)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			c.JSON(500, gin.H{"error": "Failed to create directory"})
+			return
+		}
+
+		// 创建文件（如果不存在）
+		file, err := os.Create(filePath)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "Failed to create file"})
+			return
+		}
+		file.Close()
+
+		c.JSON(200, gin.H{"message": "File created successfully"})
+	})
+
+	r.GET("/log/:filename", func(c *gin.Context) {
+		// 获取路径参数
+		fileName := c.Param("filename")
+		filePath := "/opt/log/" + fileName
+
+		// 检查文件是否存在
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+			return
+		}
+
+		// 读取并返回文件内容
+		c.File(filePath)
 	})
 
 	// 處理檔案上傳的路由
@@ -349,6 +396,7 @@ func main() {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
+		fmt.Print("test1")
 		// 调用 utils.ListReleases 函数
 		result, _ := utils.ListPods(configPath)
 

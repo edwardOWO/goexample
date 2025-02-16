@@ -40,37 +40,6 @@
         </div>
 
 
-
-        <!-- Upload Release -->
-        <div class="card mb-4">
-            <div class="card-header">Get Releases</div>
-            <div class="card-body">
-                <button type="button" class="btn btn-primary mb-3" onclick="listRelease()">Get Releases</button>
-                <button type="button" class="btn btn-secondary mb-3" id="unlockBtn" onclick="unlock()">Unlock</button>
-
-                <div id="response" class="mt-3">
-                    <h5>Response:</h5>
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Status</th>
-                                    <th>ChartName</th>
-                                    <th>Namespace</th>
-                                    <th>Chart Version </th>
-                                    <th>Last Deployed Time</th>
-                                    <th>New Chart Version </th>
-                                    <th>NeedUpdate</th>
-                                </tr>
-                            </thead>
-                            <tbody id="listReleaseResult"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Upload Release -->
         <div class="card mb-4">
             <div class="card-header">Upload Repo</div>
@@ -101,6 +70,68 @@
                 </div>
             </div>
         </div>
+
+        <div class="card mb-4">
+            <div class="card-header">Get Releases</div>
+            <div class="card-body">
+                <button type="button" class="btn btn-primary mb-3" onclick="listRelease()">Get Releases</button>
+                <button type="button" class="btn btn-secondary mb-3" id="unlockBtn" onclick="unlock()">Unlock</button>
+
+                <div id="response" class="mt-3">
+                    <h5>Response:</h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th>ChartName</th>
+                                    <th>Namespace</th>
+                                    <th>Chart Version </th>
+                                    <th>Last Deployed Time</th>
+                                    <th>New Chart Version </th>
+                                    <th>NeedUpdate</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listReleaseResult"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+
+        <div class="card mb-4">
+            <div class="card-header">Get Log</div>
+            <div class="card-body">
+                <button type="button" class="btn btn-primary mb-3" onclick="listRelease()">Get Releases</button>
+                <button type="button" class="btn btn-secondary mb-3" id="unlockBtn" onclick="unlock()">Unlock</button>
+
+                <div id="response" class="mt-3">
+                    <h5>Response:</h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th>ChartName</th>
+                                    <th>Namespace</th>
+                                    <th>Chart Version </th>
+                                    <th>Last Deployed Time</th>
+                                    <th>Download log</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listReleaseResult2"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
 
 
 
@@ -195,6 +226,7 @@
                 upgradeRelease: '/upgradeRelease',
                 rollbackRelease: '/rollbackRelease',
                 logout: '/logout',
+                log: '/log',
             }
         };
 
@@ -268,6 +300,89 @@
         }
         listRelease();
         setInterval(listRelease, 5000);
+
+
+
+        async function listRelease2() {
+            try {
+                const response = await fetch(config.baseURL + config.endpoints.listRelease, {
+                    method: 'GET'
+                });
+
+                const data = await response.json();
+                const tableBody = document.getElementById('listReleaseResult2');
+                tableBody.innerHTML = '';
+
+                data.forEach(release => {
+                    const row = document.createElement('tr');
+
+
+                    /*<td>${release.appversion}</td>*/
+                    /*<td>${release.version}</td>*/
+                    row.innerHTML = `
+                        <td>${release.name}</td>
+                        <td class="${release.status.trim() === 'deployed' ? 'table-success' : 'table-danger'}" 
+                            style="${release.status.trim() === 'deployed' ? 'background-color: rgba(40, 167, 69, 0.1); border: 1px solid #dee2e6;' : 'background-color: rgba(220, 53, 69, 0.1); border: 1px solid #dee2e6;'}">
+                            ${release.status}
+                        </td>
+                        <td>${release.chartname}</td>
+                        <td>${release.namespace}</td>
+                        <td>${release.chartversion}</td>
+                        <td>
+                            <a href="${config.baseURL}${config.endpoints.log}/${release.name}" target="_blank" download>
+                                Download link
+                            </a>
+                        </td>
+                        <td><button class="btn btn-success" onclick="getLogFunction(&quot;${release.name}&quot;,&quot;${release.chartname}&quot;,&quot;${release.namespace}&quot;)" ${unlockupdate ? '' : ''}>GetLog</button></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                const tableBody = document.getElementById('listReleaseResult2');
+                tableBody.innerHTML = `<tr><td colspan="4">Error: ${error.message}</td></tr>`;
+            }
+        }
+        listRelease2();
+        setInterval(listRelease2, 5000);
+
+
+
+        async function getLogFunction(releasename,chartname,namespace){
+            alert("產生 Log 中,等待檔案連結產生\n"+"服務名稱:"+name+"\n namespace:"+namespace)
+            alert("{{.baseURL}}/log/"+name)
+
+            const requestData = {
+                releasename: releasename,
+                chartname: chartname,
+                namespace: namespace
+            };
+
+
+            try {
+                const response = await fetch(config.baseURL + config.endpoints.log, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.text();
+                alert("Get log " + result);
+            } catch (error) {
+                console.error("Error updating release:", error);
+                alert("Failed to update release.");
+            } finally{
+            }
+        }
+
+
+
+
+
+
+
+
 
 
         async function updateFunction(releasename,chartversion,namespace) {
