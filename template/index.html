@@ -106,7 +106,7 @@
         <div class="card mb-4">
             <div class="card-header">Get Log</div>
             <div class="card-body">
-                <button type="button" class="btn btn-primary mb-3" onclick="listRelease()">Get Releases</button>
+                <button type="button" class="btn btn-primary mb-3" onclick="listRelease2()">Get Releases</button>
                 <button type="button" class="btn btn-secondary mb-3" id="unlockBtn" onclick="unlock()">Unlock</button>
 
                 <div id="response" class="mt-3">
@@ -227,6 +227,7 @@
                 rollbackRelease: '/rollbackRelease',
                 logout: '/logout',
                 log: '/log',
+                checklog: '/log-check'
             }
         };
 
@@ -313,12 +314,13 @@
                 const tableBody = document.getElementById('listReleaseResult2');
                 tableBody.innerHTML = '';
 
-                data.forEach(release => {
+                // 使用 for...of 循環來支援 await
+                for (let release of data) {
                     const row = document.createElement('tr');
 
+                    // 等待檢查檔案是否存在
+                    const fileExists = await checkLogFunction(release.name);
 
-                    /*<td>${release.appversion}</td>*/
-                    /*<td>${release.version}</td>*/
                     row.innerHTML = `
                         <td>${release.name}</td>
                         <td class="${release.status.trim() === 'deployed' ? 'table-success' : 'table-danger'}" 
@@ -329,28 +331,31 @@
                         <td>${release.namespace}</td>
                         <td>${release.chartversion}</td>
                         <td>
-                            <a href="${config.baseURL}${config.endpoints.log}/${release.name}" target="_blank" download>
-                                Download link
-                            </a>
+                            ${fileExists ? 
+                                `<a href="${config.baseURL}${config.endpoints.log}/${release.name}.tar" target="_blank" download>
+                                    Download link
+                                </a>` 
+                                : 
+                                `<span>檔案尚未產生</span>`
+                            }
                         </td>
                         <td><button class="btn btn-success" onclick="getLogFunction(&quot;${release.name}&quot;,&quot;${release.chartname}&quot;,&quot;${release.namespace}&quot;)" ${unlockupdate ? '' : ''}>GetLog</button></td>
                     `;
                     tableBody.appendChild(row);
-                });
+                }
             } catch (error) {
                 const tableBody = document.getElementById('listReleaseResult2');
                 tableBody.innerHTML = `<tr><td colspan="4">Error: ${error.message}</td></tr>`;
             }
         }
+
         listRelease2();
-        setInterval(listRelease2, 5000);
+        //setInterval(listRelease2, 5000);
 
 
 
         async function getLogFunction(releasename,chartname,namespace){
             alert("產生 Log 中,等待檔案連結產生\n"+"服務名稱:"+name+"\n namespace:"+namespace)
-            alert("{{.baseURL}}/log/"+name)
-
             const requestData = {
                 releasename: releasename,
                 chartname: chartname,
@@ -369,6 +374,7 @@
 
                 const result = await response.text();
                 alert("Get log " + result);
+                listRelease2();
             } catch (error) {
                 console.error("Error updating release:", error);
                 alert("Failed to update release.");
@@ -377,6 +383,33 @@
         }
 
 
+        async function checkLogFunction(releasename) {
+            const requestData = {
+                exists: true,
+            };
+
+            try {
+                // 發送 GET 請求來檢查日誌檔案是否存在
+                const response = await fetch(config.baseURL + config.endpoints.checklog + "/" + releasename, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                });
+
+                // 確保回應成功
+                if (response.ok) {
+                    const result = await response.json(); // 獲取 JSON 回應
+                    return result.exists
+                } else {
+                    return false
+                }
+
+            } catch (error) {
+                console.error("檢查檔案過程中發生錯誤:", error);
+                alert("檢查檔案時發生錯誤，請稍後再試。");
+            }
+        }
 
 
 

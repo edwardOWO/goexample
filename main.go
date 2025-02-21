@@ -61,9 +61,9 @@ func loadConfig() Config {
 	version := getEnv("VERSION", "test")
 	customer := getEnv("CUSTOMER", "測試用戶")
 
-	values := "values.yaml"
+	values := "values"
 	if customer != "測試用戶" {
-		values = fmt.Sprintf("%s.yaml", customer)
+		values = customer
 	}
 
 	baseURL := getEnv("BASEURL", "/vscode/proxy/8888")
@@ -161,6 +161,13 @@ func main() {
 			log.Printf("%s 失敗", string(output))
 		}
 
+		cmd = exec.Command("sh", "-c", "rm -rf /opt/log/*")
+		log.Printf("執行命令: %s", strings.Join(cmd.Args, " "))
+		output, err = cmd.CombinedOutput()
+		if err != nil {
+			log.Printf("%s 失敗", string(output))
+		}
+
 		c.SetCookie("username", "", -1, "/", "", false, true)
 		c.SetCookie("password", "", -1, "/", "", false, true)
 		// 轉跳到 /login 頁面
@@ -211,24 +218,9 @@ func main() {
 			return
 		}
 
-		filePath := "/opt/log/" + req.ReleaseName
+		go utils.GetReleaseLog(req.ReleaseName, req.Namespace, "/tmp", config.K8sConfig)
 
-		// 确保目录存在
-		dir := filepath.Dir(filePath)
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			c.JSON(500, gin.H{"error": "Failed to create directory"})
-			return
-		}
-
-		// 创建文件（如果不存在）
-		file, err := os.Create(filePath)
-		if err != nil {
-			c.JSON(500, gin.H{"error": "Failed to create file"})
-			return
-		}
-		file.Close()
-
-		c.JSON(200, gin.H{"message": "File created successfully"})
+		c.JSON(200, gin.H{"message": "開始產生 Log 紀錄"})
 	})
 
 	r.GET("/log/:filename", func(c *gin.Context) {
@@ -244,6 +236,27 @@ func main() {
 
 		// 读取并返回文件内容
 		c.File(filePath)
+	})
+
+	r.GET("/log-check/:filename", func(c *gin.Context) {
+		fileName := c.Param("filename")
+		filePath := "/opt/log/" + fileName + ".tar"
+		fileTag := "/opt/log/." + fileName + ".done"
+
+		// 检查完成標籤是否存在
+		if _, err := os.Stat(fileTag); os.IsNotExist(err) {
+			c.JSON(http.StatusNotFound, gin.H{"exists": false})
+			return
+		}
+
+		// 检查文件是否存在
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			c.JSON(http.StatusNotFound, gin.H{"exists": false})
+			return
+		}
+
+		// 文件存在，返回文件存在的訊息
+		c.JSON(http.StatusOK, gin.H{"exists": true})
 	})
 
 	// 處理檔案上傳的路由
@@ -396,7 +409,6 @@ func main() {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
-		fmt.Print("test1")
 		// 调用 utils.ListReleases 函数
 		result, _ := utils.ListPods(configPath)
 

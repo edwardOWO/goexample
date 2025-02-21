@@ -7,6 +7,9 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -192,16 +195,13 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 		log.Fatalf("无法创建 Kubernetes 客户端: %v", err)
 	}
 
-	fmt.Println("test2")
-
 	// 获取所有命名空间的 Pods 列表
 	pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		log.Fatalf("无法获取 Pods 列表: %v", err)
 	}
-	fmt.Println("test3")
+
 	// 输出结果
-	//fmt.Println("查询到的 Pods 状态:")
 	var podList []PodStatus
 	if len(pods.Items) == 0 {
 		fmt.Println("没有找到 Pod")
@@ -249,13 +249,13 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 		}
 
 		// 将结构体数据转换为 JSON 格式并输出
-		jsonData, err := json.MarshalIndent(podList, "", "  ")
+		_, err := json.MarshalIndent(podList, "", "  ")
 		if err != nil {
 			log.Fatalf("无法将 Pods 转换为 JSON: %v", err)
 		}
 
-		fmt.Println("Pods 数据的 JSON 表示:")
-		fmt.Println(string(jsonData))
+		//fmt.Println("Pods 数据的 JSON 表示:")
+		//fmt.Println(string(jsonData))
 	}
 	return podList, nil
 }
@@ -421,6 +421,22 @@ func RollbackRelease(repoName, repoURL, releaseName, chartName string, valuesNam
 	return string(output), nil
 
 }
+
+func GetValuesName(releaseName, values string) string {
+
+	re := regexp.MustCompile(`sip(\d+)`)
+	matches := re.FindStringSubmatch(releaseName)
+
+	if len(matches) > 1 {
+		number, _ := strconv.Atoi(matches[1])
+		return fmt.Sprintf("%s%d.yaml", values, number)
+	} else {
+
+		return fmt.Sprintf("%s.yaml", values)
+	}
+
+}
+
 func UpgradeRelease(repoName, repoURL, releaseName, chartName string, valuesName string, namespace string, kubeconfig string) (string, error) {
 
 	chartPackageName, _ := GetChartPackageName(repoName, repoURL, chartName)
@@ -444,6 +460,8 @@ func UpgradeRelease(repoName, repoURL, releaseName, chartName string, valuesName
 		log.Printf("解壓縮執行失敗: %s", string(output))
 		return "", err
 	}
+
+	valuesName = GetValuesName(releaseName, valuesName)
 
 	// 更新指令
 	cmd = exec.Command("helm", "upgrade", releaseName, "./"+chartName, "--namespace", namespace, "-f", "./"+chartName+"/"+valuesName, "--kubeconfig", kubeconfig)
@@ -513,4 +531,95 @@ func GetChartPackageName(repoName, repoURL, chartName string) (string, error) {
 	packagesName := fmt.Sprintf("%s-%s.tgz", chartName, latestVersion.Version)
 
 	return packagesName, nil
+}
+
+func GetReleaseLog(releaseName string, namespace string, logPath string, kubeconfig string) error {
+
+	apiLogPath := "/opt/log"
+	collectPath := filepath.Join(apiLogPath, releaseName)
+
+	fileTag := apiLogPath + "/." + releaseName + ".done"
+
+	startTime := "2025-02-18"
+	endTime := "2025-02-22"
+
+	// 确保目录存在
+	_, err := os.Stat(collectPath)
+
+	// 如果目录不存在，检查错误类型
+	if os.IsNotExist(err) {
+		// 目录不存在，创建目录
+		if err := os.MkdirAll(collectPath, 0777); err != nil {
+			return err
+		}
+	}
+
+	// 检查 kubeconfig 文件是否存在
+	if _, err := os.Stat(kubeconfig); os.IsNotExist(err) {
+		log.Fatalf("kubeconfig 文件不存在: %v", err)
+	}
+
+	// 加载 kubeconfig 文件
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		log.Fatalf("无法加载 kubeconfig 文件: %v", err)
+	}
+
+	// 创建 Kubernetes 客户端
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		log.Fatalf("无法创建 Kubernetes 客户端: %v", err)
+	}
+
+	labelSelector := fmt.Sprintf("app.kubernetes.io/instance=%s", releaseName)
+
+	pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: labelSelector})
+	if err != nil {
+		log.Fatalf("无法获取 Pods 列表: %v", err)
+	}
+
+	// 过滤与 releaseName 相关的 Pods
+	for _, pod := range pods.Items {
+		if strings.Contains(pod.Name, releaseName) {
+			log.Printf("发现匹配的 Pod: %s", pod.Name)
+
+			targetPath := fmt.Sprintf("find %s -type f -newermt %s ! -newermt %s | xargs tar -cf /tmp/logs.tar", logPath, startTime, endTime)
+			// 在 Pod 内部压缩日志文件
+			cmdTar := exec.Command("kubectl", "exec", pod.Name, "-n", namespace, "--",
+				"sh", "-c", targetPath)
+
+			log.Printf(strings.Join(cmdTar.Args, ""))
+
+			if err := cmdTar.Run(); err != nil {
+				log.Printf("无法压缩日志: %v", err)
+				continue
+			}
+
+			// 复制压缩文件到本地
+			cmdCp := exec.Command("kubectl", "cp", namespace+"/"+pod.Name+":"+"/tmp/logs.tar", filepath.Join(collectPath, pod.Name+".tar"))
+
+			log.Printf(strings.Join(cmdCp.Args, ""))
+			if err := cmdCp.Run(); err != nil {
+				log.Printf("无法下载日志文件: %v", err)
+				continue
+			}
+
+			log.Printf("日志已保存到: %s", filepath.Join(collectPath, pod.Name+".tar"))
+		}
+	}
+
+	cmdTar := exec.Command("tar", "-cf", filepath.Join(apiLogPath, releaseName+".tar"), collectPath)
+	if err := cmdTar.Run(); err != nil {
+		log.Printf("無法壓縮日誌: %v", err)
+		return err
+	}
+
+	completeTag := exec.Command("touch", fileTag)
+
+	if err := completeTag.Run(); err != nil {
+		log.Printf("無法產生完成戳記: %v", err)
+		return err
+	}
+
+	return nil
 }
