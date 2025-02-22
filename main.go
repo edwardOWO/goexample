@@ -218,7 +218,7 @@ func main() {
 			return
 		}
 
-		go utils.GetReleaseLog(req.ReleaseName, req.Namespace, "/tmp", config.K8sConfig)
+		go utils.GetReleaseLog(req.ReleaseName, req.Namespace, "/var/log", config.K8sConfig)
 
 		c.JSON(200, gin.H{"message": "開始產生 Log 紀錄"})
 	})

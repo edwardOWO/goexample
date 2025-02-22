@@ -541,7 +541,7 @@ func GetReleaseLog(releaseName string, namespace string, logPath string, kubecon
 	fileTag := apiLogPath + "/." + releaseName + ".done"
 
 	startTime := "2025-02-18"
-	endTime := "2025-02-22"
+	endTime := "2025-02-25"
 
 	// 确保目录存在
 	_, err := os.Stat(collectPath)
@@ -581,30 +581,46 @@ func GetReleaseLog(releaseName string, namespace string, logPath string, kubecon
 	// 过滤与 releaseName 相关的 Pods
 	for _, pod := range pods.Items {
 		if strings.Contains(pod.Name, releaseName) {
-			log.Printf("发现匹配的 Pod: %s", pod.Name)
 
-			targetPath := fmt.Sprintf("find %s -type f -newermt %s ! -newermt %s | xargs tar -cf /tmp/logs.tar", logPath, startTime, endTime)
-			// 在 Pod 内部压缩日志文件
-			cmdTar := exec.Command("kubectl", "exec", pod.Name, "-n", namespace, "--",
-				"sh", "-c", targetPath)
+			for _, container := range pod.Spec.Containers {
 
-			log.Printf(strings.Join(cmdTar.Args, ""))
+				// 跳過 filebeat log
+				if container.Name == "filebeat" {
+					continue
+				}
 
-			if err := cmdTar.Run(); err != nil {
-				log.Printf("无法压缩日志: %v", err)
-				continue
+				log.Printf("发现匹配的 Pod: %s", pod.Name)
+
+				targetPath := fmt.Sprintf(
+					"touch -t %s /tmp/start_time && "+ //設定開始時間
+						"touch -t %s /tmp/end_time && "+ //設定結束時間
+						//搜尋區間內檔案 (部分os 不支援日期查詢故使用此方法)
+						"find %s -type f -newer /tmp/start_time ! -newer /tmp/end_time | xargs tar -cf /tmp/logs.tar",
+					startTime, endTime, logPath)
+
+				// 在 Pod 内部压缩日志文件
+				cmdTar := exec.Command("kubectl", "exec", "-c", container.Name, pod.Name, "-n", namespace, "--",
+					"sh", "-c", targetPath)
+
+				log.Printf(strings.Join(cmdTar.Args, " "))
+
+				if err := cmdTar.Run(); err != nil {
+					log.Printf("无法压缩日志: %v", err)
+					continue
+				}
+
+				// 复制压缩文件到本地
+				cmdCp := exec.Command("kubectl", "cp", "-c", container.Name, namespace+"/"+pod.Name+":"+"/tmp/logs.tar", filepath.Join(collectPath, pod.Name+"_"+container.Name+".tar"))
+
+				log.Printf(strings.Join(cmdCp.Args, ""))
+				if err := cmdCp.Run(); err != nil {
+					log.Printf("无法下载日志文件: %v", err)
+					continue
+				}
+
+				log.Printf("日志已保存到: %s", filepath.Join(collectPath, pod.Name+".tar"))
 			}
 
-			// 复制压缩文件到本地
-			cmdCp := exec.Command("kubectl", "cp", namespace+"/"+pod.Name+":"+"/tmp/logs.tar", filepath.Join(collectPath, pod.Name+".tar"))
-
-			log.Printf(strings.Join(cmdCp.Args, ""))
-			if err := cmdCp.Run(); err != nil {
-				log.Printf("无法下载日志文件: %v", err)
-				continue
-			}
-
-			log.Printf("日志已保存到: %s", filepath.Join(collectPath, pod.Name+".tar"))
 		}
 	}
 
