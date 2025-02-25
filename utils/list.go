@@ -210,7 +210,7 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 		for _, p := range pods.Items {
 
 			if string(p.Status.Phase) == "Running" {
-				fmt.Print(p.Name)
+				//fmt.Print(p.Name)
 				podList = append(podList, PodStatus{
 					Name:        p.Name,
 					Namespace:   p.Namespace,
@@ -220,7 +220,7 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 				})
 			} else {
 
-				fmt.Print(p.Name)
+				//fmt.Print(p.Name)
 				if len(p.Status.ContainerStatuses) > 0 {
 
 					containerStatus := p.Status.ContainerStatuses[0]
@@ -533,107 +533,148 @@ func GetChartPackageName(repoName, repoURL, chartName string) (string, error) {
 	return packagesName, nil
 }
 
-func GetReleaseLog(releaseName string, namespace string, logPath string, kubeconfig string) error {
+func GetReleaseLog(releaseName string, namespace string, logPath string, startTime string, endTime string, kubeconfig string) error {
 
 	apiLogPath := "/opt/log"
+
+	// log 收集環城後的路徑
 	collectPath := filepath.Join(apiLogPath, releaseName)
 
-	fileTag := apiLogPath + "/." + releaseName + ".done"
+	// 收集 Release log 時,前端透過讀取此隱藏標籤,判斷檔案是否完成
+	doneTag := filepath.Join(apiLogPath, "."+releaseName+".done")
+	// 開始收集
+	runningTag := filepath.Join(apiLogPath, "."+releaseName+".running")
 
-	startTime := "2025-02-18"
-	endTime := "2025-02-25"
+	// 設定收集日期
 
-	// 确保目录存在
 	_, err := os.Stat(collectPath)
 
-	// 如果目录不存在，检查错误类型
+	// 確認 log 暫存目錄是否存在
 	if os.IsNotExist(err) {
-		// 目录不存在，创建目录
+		// 目錄不存在產生資料夾
 		if err := os.MkdirAll(collectPath, 0777); err != nil {
 			return err
 		}
 	}
 
-	// 检查 kubeconfig 文件是否存在
+	// 刪除完成標籤,將狀態設定為未完成狀態
+	completeTag := exec.Command("rm", doneTag, runningTag)
+
+	// 檢查 kuebconfig 目錄是否存在
 	if _, err := os.Stat(kubeconfig); os.IsNotExist(err) {
-		log.Fatalf("kubeconfig 文件不存在: %v", err)
+		log.Fatalf("kubeconfig 文件不存在: %v", err.Error())
 	}
 
-	// 加载 kubeconfig 文件
+	// 讀取 kubeconfig 文件
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
-		log.Fatalf("无法加载 kubeconfig 文件: %v", err)
+		log.Fatalf("無法讀取 kubeconfig 文件: %v", err)
 	}
 
-	// 创建 Kubernetes 客户端
+	// 創建 k8s 連線
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		log.Fatalf("无法创建 Kubernetes 客户端: %v", err)
+		log.Fatalf("無法建立 Kubernetes 連線: %v", err)
 	}
 
 	labelSelector := fmt.Sprintf("app.kubernetes.io/instance=%s", releaseName)
 
 	pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
-		log.Fatalf("无法获取 Pods 列表: %v", err)
+		log.Fatalf("無法獲取 Pods 列表: %v", err)
 	}
 
-	// 过滤与 releaseName 相关的 Pods
+	// 產生運行標籤
+	completeTag = exec.Command("touch", runningTag)
+	if err := completeTag.Run(); err != nil {
+		log.Printf("無法產生完成戳記: %v", err)
+		return err
+	}
+
+	// 模擬運行中
+
+	// 過濾與 Release 相關的 pods
 	for _, pod := range pods.Items {
 		if strings.Contains(pod.Name, releaseName) {
 
 			for _, container := range pod.Spec.Containers {
 
-				// 跳過 filebeat log
-				if container.Name == "filebeat" {
-					continue
-				}
-
-				log.Printf("发现匹配的 Pod: %s", pod.Name)
-
+				// 如果是 filebeat 容器跳過不讀取 log
 				targetPath := fmt.Sprintf(
 					"touch -t %s /tmp/start_time && "+ //設定開始時間
 						"touch -t %s /tmp/end_time && "+ //設定結束時間
 						//搜尋區間內檔案 (部分os 不支援日期查詢故使用此方法)
-						"find %s -type f -newer /tmp/start_time ! -newer /tmp/end_time | xargs tar -cf /tmp/logs.tar",
+						"find %s -type f -newer /tmp/start_time ! -newer /tmp/end_time | xargs tar -zcf /tmp/logs.tar.gz",
 					startTime, endTime, logPath)
 
-				// 在 Pod 内部压缩日志文件
-				cmdTar := exec.Command("kubectl", "exec", "-c", container.Name, pod.Name, "-n", namespace, "--",
-					"sh", "-c", targetPath)
+				// 在 Pod 內部壓縮文件
+				cmdTar := exec.Command("/usr/local/bin/kubectl", "--kubeconfig=/tmp/config.yaml", "exec", "-c", container.Name, pod.Name, "-n", namespace, "--", "sh", "-c", targetPath)
 
 				log.Printf(strings.Join(cmdTar.Args, " "))
+				//fmt.Print(targetPath)
 
-				if err := cmdTar.Run(); err != nil {
-					log.Printf("无法压缩日志: %v", err)
-					continue
+				//fmt.Print(container.Name)
+				//cmdTar := exec.Command("/usr/local/bin/kubectl", "--kubeconfig=/tmp/config.yaml", "get", "pod")
+
+				// 获取命令的标准输出和标准错误
+				output, err := cmdTar.CombinedOutput()
+				if err != nil {
+					log.Printf("无法执行命令: %v", err)
+					log.Printf("错误输出: %s", output)
 				}
 
-				// 复制压缩文件到本地
-				cmdCp := exec.Command("kubectl", "cp", "-c", container.Name, namespace+"/"+pod.Name+":"+"/tmp/logs.tar", filepath.Join(collectPath, pod.Name+"_"+container.Name+".tar"))
+				// 打印命令输出
+				fmt.Println("命令输出: ")
+				fmt.Println(string(output))
+
+				// 複製文件壓縮至本地
+
+				cmdCp := exec.Command("/usr/local/bin/kubectl", "--kubeconfig=/tmp/config.yaml", "cp", "-c", container.Name, namespace+"/"+pod.Name+":"+"/tmp/logs.tar.gz", filepath.Join(collectPath, pod.Name+"_"+container.Name+".tar.gz"))
 
 				log.Printf(strings.Join(cmdCp.Args, ""))
-				if err := cmdCp.Run(); err != nil {
-					log.Printf("无法下载日志文件: %v", err)
-					continue
+				output, err = cmdCp.CombinedOutput()
+				if err != nil {
+					log.Printf("无法执行命令: %v", err)
+					log.Printf("错误输出: %s", output)
 				}
 
-				log.Printf("日志已保存到: %s", filepath.Join(collectPath, pod.Name+".tar"))
+				// 打印命令输出
+				fmt.Println("命令输出: ")
+				fmt.Println(string(output))
+
+				rmlog := exec.Command("/usr/local/bin/kubectl", "--kubeconfig=/tmp/config.yaml", "exec", "-c", container.Name, pod.Name, "-n", namespace, "--", "sh", "-c", "rm /tmp/logs.tar.gz")
+				log.Printf(strings.Join(rmlog.Args, ""))
+				output, err = rmlog.CombinedOutput()
+				if err != nil {
+					log.Printf("无法执行命令: %v", err)
+					log.Printf("错误输出: %s", output)
+				}
+
+				log.Printf("日志已保存到: %s", filepath.Join(collectPath, pod.Name+".tar.gz"))
+
 			}
 
 		}
 	}
 
-	cmdTar := exec.Command("tar", "-cf", filepath.Join(apiLogPath, releaseName+".tar"), collectPath)
+	// 開始壓縮收集完成的資料夾
+	cmdTar := exec.Command("tar", "-zcf", filepath.Join(apiLogPath, releaseName+".tar.gz"), collectPath)
 	if err := cmdTar.Run(); err != nil {
-		log.Printf("無法壓縮日誌: %v", err)
+		log.Printf("無法壓縮日誌: %v", err.Error())
 		return err
 	}
 
-	completeTag := exec.Command("touch", fileTag)
-
+	// 刪除運行標籤
+	completeTag = exec.Command("rm", runningTag)
 	if err := completeTag.Run(); err != nil {
-		log.Printf("無法產生完成戳記: %v", err)
+		log.Printf("無法刪除運行戳記: %v", err.Error())
+		return err
+	}
+
+	// 產生完成標籤
+	completeTag = exec.Command("touch", doneTag)
+	if err := completeTag.Run(); err != nil {
+		log.Printf("無法產生完成戳記: %v", err.Error())
 		return err
 	}
 

@@ -23,13 +23,21 @@ type UpgradeRequest struct {
 	Namespace   string `json:"namespace"`
 }
 
+type GetLogRequest struct {
+	ReleaseName string `json:"releasename"`
+	ChartName   string `json:"chartname"`
+	Namespace   string `json:"namespace"`
+	StartTime   string `json:"startTime"`
+	EndTime     string `json:"endTime"`
+}
+
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		username, err1 := c.Cookie("username")
 		password, err2 := c.Cookie("password")
 
 		// 如果 Cookie 不存在，或帳密不正確，則返回 401
-		if err1 != nil || err2 != nil || username != "admin" || password != "password123" {
+		if err1 != nil || err2 != nil || username != "admin" || password != "edward0128Juikertest123321" {
 			c.Redirect(http.StatusFound, "/login")
 			c.Abort() // 阻止後續處理
 			return
@@ -161,7 +169,7 @@ func main() {
 			log.Printf("%s 失敗", string(output))
 		}
 
-		cmd = exec.Command("sh", "-c", "rm -rf /opt/log/*")
+		cmd = exec.Command("sh", "-c", "rm -rf /opt/log/* /opt/log/.*")
 		log.Printf("執行命令: %s", strings.Join(cmd.Args, " "))
 		output, err = cmd.CombinedOutput()
 		if err != nil {
@@ -196,7 +204,7 @@ func main() {
 		}
 
 		// 驗證帳號密碼 (這裡你可以換成查詢資料庫),驗證OTP
-		if req.Username == "admin" && req.Password == "password123" && otp(config.OtpSecret, req.OTP) {
+		if req.Username == "admin" && req.Password == "edward0128Juikertest123321" && otp(config.OtpSecret, req.OTP) {
 			// 登入成功，設定 Cookie
 			c.SetCookie("username", req.Username, 3600, "/", "", false, true)
 			c.SetCookie("password", req.Password, 3600, "/", "", false, true)
@@ -211,14 +219,16 @@ func main() {
 
 	r.POST("/log", func(c *gin.Context) {
 
-		var req UpgradeRequest
+		var req GetLogRequest
 
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
+		// 202502180000
+		// 202503010000
 
-		go utils.GetReleaseLog(req.ReleaseName, req.Namespace, "/var/log", config.K8sConfig)
+		go utils.GetReleaseLog(req.ReleaseName, req.Namespace, "/var/log", req.StartTime, req.EndTime, config.K8sConfig)
 
 		c.JSON(200, gin.H{"message": "開始產生 Log 紀錄"})
 	})
@@ -240,23 +250,28 @@ func main() {
 
 	r.GET("/log-check/:filename", func(c *gin.Context) {
 		fileName := c.Param("filename")
-		filePath := "/opt/log/" + fileName + ".tar"
-		fileTag := "/opt/log/." + fileName + ".done"
+		basePath := "/opt/log"
+		filePath := filepath.Join(basePath, fileName+".tar.gz")
+		fileDone := filepath.Join(basePath, "."+fileName+".done")
+		fileRunning := filepath.Join(basePath, "."+fileName+".running")
 
-		// 检查完成標籤是否存在
-		if _, err := os.Stat(fileTag); os.IsNotExist(err) {
-			c.JSON(http.StatusNotFound, gin.H{"exists": false})
+		// 檢查 `.running` 標籤（代表任務正在執行）
+		if _, err := os.Stat(fileRunning); err == nil {
+			c.JSON(http.StatusAccepted, gin.H{"exists": 1}) // 202: 任務仍在執行
 			return
 		}
 
-		// 检查文件是否存在
-		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			c.JSON(http.StatusNotFound, gin.H{"exists": false})
-			return
+		// 檢查 `.done` 標籤（代表任務已完成）
+		if _, err := os.Stat(fileDone); err == nil {
+			// 檢查最終的日誌檔案是否已生成
+			if _, err := os.Stat(filePath); err == nil {
+				c.JSON(http.StatusOK, gin.H{"exists": 2}) // 200: 日誌檔案已生成
+				return
+			}
 		}
 
-		// 文件存在，返回文件存在的訊息
-		c.JSON(http.StatusOK, gin.H{"exists": true})
+		// 無相關檔案
+		c.JSON(http.StatusOK, gin.H{"exists": 0}) // 200: 沒有任務記錄
 	})
 
 	// 處理檔案上傳的路由

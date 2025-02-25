@@ -106,7 +106,7 @@
         <div class="card mb-4">
             <div class="card-header">Get Log</div>
             <div class="card-body">
-                <button type="button" class="btn btn-primary mb-3" onclick="listRelease2()">Get Releases</button>
+                <button type="button" class="btn btn-primary mb-3" onclick="listRelease2()">Refresh Log</button>
                 <button type="button" class="btn btn-secondary mb-3" id="unlockBtn" onclick="unlock()">Unlock</button>
 
                 <div id="response" class="mt-3">
@@ -305,23 +305,24 @@
 
 
         async function listRelease2() {
-            try {
-                const response = await fetch(config.baseURL + config.endpoints.listRelease, {
-                    method: 'GET'
-                });
+        try {
+            const response = await fetch(config.baseURL + config.endpoints.listRelease, {
+                method: 'GET'
+            });
 
-                const data = await response.json();
-                const tableBody = document.getElementById('listReleaseResult2');
-                tableBody.innerHTML = '';
+            const data = await response.json();
+            const tableBody = document.getElementById('listReleaseResult2');
+            let tableContent = ''; // 用來暫存 HTML 內容
 
-                // 使用 for...of 循環來支援 await
-                for (let release of data) {
-                    const row = document.createElement('tr');
+            // 使用 Promise.all 等待所有 checkLogFunction 完成
+            const fileExistsList = await Promise.all(data.map(release => checkLogFunction(release.name)));
 
-                    // 等待檢查檔案是否存在
-                    const fileExists = await checkLogFunction(release.name);
+            // 生成所有表格行的 HTML
+            data.forEach((release, index) => {
+                const fileExists = fileExistsList[index];
 
-                    row.innerHTML = `
+                tableContent += `
+                    <tr>
                         <td>${release.name}</td>
                         <td class="${release.status.trim() === 'deployed' ? 'table-success' : 'table-danger'}" 
                             style="${release.status.trim() === 'deployed' ? 'background-color: rgba(40, 167, 69, 0.1); border: 1px solid #dee2e6;' : 'background-color: rgba(220, 53, 69, 0.1); border: 1px solid #dee2e6;'}">
@@ -331,35 +332,58 @@
                         <td>${release.namespace}</td>
                         <td>${release.chartversion}</td>
                         <td>
-                            ${fileExists ? 
-                                `<a href="${config.baseURL}${config.endpoints.log}/${release.name}.tar" target="_blank" download>
-                                    Download link
+                            ${fileExists === 2 ? 
+                                `<a href="${config.baseURL}${config.endpoints.log}/${release.name}.tar.gz" 
+                                    target="_blank" 
+                                    download="${release.name}_${new Date().toISOString().replace(/[:T]/g, '-').slice(0,19)}.tar.gz">
+                                    下載連結
                                 </a>` 
-                                : 
-                                `<span>檔案尚未產生</span>`
+                                : fileExists === 1 ? 
+                                    `<span>檔案產生中...</span>` 
+                                    : `<span></span>`
                             }
                         </td>
-                        <td><button class="btn btn-success" onclick="getLogFunction(&quot;${release.name}&quot;,&quot;${release.chartname}&quot;,&quot;${release.namespace}&quot;)" ${unlockupdate ? '' : ''}>GetLog</button></td>
-                    `;
-                    tableBody.appendChild(row);
-                }
+                        <td><button class="btn btn-success" onclick="getLogFunction('${release.name}', '${release.chartname}', '${release.namespace}')" ${unlockupdate ? '' : ''}>GetLog</button></td>
+                    </tr>
+                `;
+            });
+
+            // 統一更新 DOM，避免逐行渲染造成的頁面閃爍
+            tableBody.innerHTML = tableContent;
+
             } catch (error) {
-                const tableBody = document.getElementById('listReleaseResult2');
-                tableBody.innerHTML = `<tr><td colspan="4">Error: ${error.message}</td></tr>`;
+                document.getElementById('listReleaseResult2').innerHTML = `<tr><td colspan="7">Error: ${error.message}</td></tr>`;
             }
         }
 
         listRelease2();
-        //setInterval(listRelease2, 5000);
+        setInterval(listRelease2, 10000);
 
 
 
         async function getLogFunction(releasename,chartname,namespace){
+
+            //startTime = prompt("請輸入開始時間 (格式: YYYYMMDDHHMM):", "202502180000");
+            //endTime = prompt("請輸入結束時間 (格式: YYYYMMDDHHMM):", "202503180000");
+
+            const { startTime, endTime } = await openDateTimePicker();
+            if (!startTime || !endTime) {
+                alert("開始時間或結束時間未選擇，請重試。");
+                return;
+            }
+
+            localStorage.setItem("lastStartTime", startTime);
+            localStorage.setItem("lastEndTime", endTime);
+            //startTime="202502180000"
+            //endTime="202503180000"
+
             alert("產生 Log 中,等待檔案連結產生\n"+"服務名稱:"+name+"\n namespace:"+namespace)
             const requestData = {
                 releasename: releasename,
                 chartname: chartname,
-                namespace: namespace
+                namespace: namespace,
+                startTime: startTime.replace(/\D/g, ""),  // 格式化為 YYYYMMDDHHMM
+                endTime: endTime.replace(/\D/g, "")
             };
 
 
@@ -373,13 +397,48 @@
                 });
 
                 const result = await response.text();
-                alert("Get log " + result);
+                //alert("Get log " + result);
                 listRelease2();
             } catch (error) {
                 console.error("Error updating release:", error);
-                alert("Failed to update release.");
+                //alert("Failed to update release.");
             } finally{
             }
+        }
+
+
+        function openDateTimePicker() {
+            return new Promise((resolve) => {
+                // 取得 localStorage 內的值，若無則使用預設值
+                const lastStartTime = localStorage.getItem("lastStartTime") || "2025-02-18T00:00";
+                const lastEndTime = localStorage.getItem("lastEndTime") || "2025-03-18T00:00";
+
+                const modal = document.createElement("div");
+                modal.innerHTML = `
+                    <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                                background: white; padding: 20px; box-shadow: 0px 0px 10px rgba(0,0,0,0.3);
+                                z-index: 1000; border-radius: 10px;">
+                        <h3>請選擇時間區間</h3>
+                        <label>開始時間: <input type="datetime-local" id="startTime" value="${lastStartTime}"></label><br><br>
+                        <label>結束時間: <input type="datetime-local" id="endTime" value="${lastEndTime}"></label><br><br>
+                        <button id="confirmBtn">確定</button>
+                        <button id="cancelBtn">取消</button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                document.getElementById("confirmBtn").addEventListener("click", () => {
+                    const startTime = document.getElementById("startTime").value;
+                    const endTime = document.getElementById("endTime").value;
+                    modal.remove();
+                    resolve({ startTime, endTime });
+                });
+
+                document.getElementById("cancelBtn").addEventListener("click", () => {
+                    modal.remove();
+                    resolve({ startTime: null, endTime: null });
+                });
+            });
         }
 
 
@@ -402,7 +461,7 @@
                     const result = await response.json(); // 獲取 JSON 回應
                     return result.exists
                 } else {
-                    return false
+                    return 0
                 }
 
             } catch (error) {
