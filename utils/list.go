@@ -45,6 +45,7 @@ type PodStatus struct {
 	ReleaseName string `json:"releasename"` // Pod 的 release 來源
 	Status      string `json:"status"`      // Pod 状态
 	NodeName    string `json:"nodename"`    // Pod 所在节点名称
+	Age         string `json:"age"`         // Pod 所在节点名称
 }
 
 type HelmRepoPackage struct {
@@ -202,26 +203,32 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 	}
 
 	// 输出结果
+
+	// 计算 Pod 运行时间（单位：秒）
 	var podList []PodStatus
 	if len(pods.Items) == 0 {
 		fmt.Println("没有找到 Pod")
 	} else {
 		// 将 Pods 数据存储到自定义结构体
+
 		for _, p := range pods.Items {
 
 			status := p.Status.Phase
 
 			if string(p.Status.Phase) == "Running" {
 				//fmt.Print(p.Name)
+				now := time.Now()
 				podList = append(podList, PodStatus{
 					Name:        p.Name,
 					Namespace:   p.Namespace,
 					ReleaseName: p.Labels["app.kubernetes.io/instance"],
 					Status:      string(status),
 					NodeName:    p.Spec.NodeName,
+					Age:         now.Sub(p.CreationTimestamp.Time).String(),
 				})
 			} else if len(p.Status.ContainerStatuses) > 0 {
 
+				now := time.Now()
 				// 預設先使用外部狀態
 				podstatus := PodStatus{
 					Name:        p.Name,
@@ -229,6 +236,7 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 					ReleaseName: p.Labels["app.kubernetes.io/instance"],
 					Status:      string(status), // 这里直接取 Waiting.Reason
 					NodeName:    p.Spec.NodeName,
+					Age:         now.Sub(p.CreationTimestamp.Time).String(),
 				}
 
 				// 讀取每個 pods 的異常狀態,如果有異常就打印並立刻退出
@@ -256,12 +264,14 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 
 			} else {
 
+				now := time.Now()
 				podList = append(podList, PodStatus{
 					Name:        p.Name,
 					Namespace:   p.Namespace,
 					ReleaseName: p.Labels["app.kubernetes.io/instance"],
 					Status:      string(p.Status.Phase),
 					NodeName:    p.Spec.NodeName,
+					Age:         now.Sub(p.CreationTimestamp.Time).String(),
 				})
 
 			}

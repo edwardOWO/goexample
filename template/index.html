@@ -159,6 +159,7 @@
                                     <th>ReleaseName</th>
                                     <th>Status</th>
                                     <th>Node Name</th>
+                                    <th>Age</th>
                                 </tr>
                             </thead>
                             <tbody id="listPods"></tbody>
@@ -566,12 +567,14 @@
                 data.forEach(pod => {
                     const row = document.createElement('tr');
 
+                    pod.age=formatDuration(pod.age);
                     row.innerHTML = `
                         <td>${pod.name}</td>
                         <td>${pod.namespace}</td>
                         <td>${pod.releasename}</td>
                         <td class="${pod.status.trim() === 'Running' ? 'table-success' : 'table-danger'}" style="${pod.status.trim() === 'Running' ? 'background-color: rgba(40, 167, 69, 0.1); border: 1px solid #dee2e6;' : 'background-color: rgba(220, 53, 69, 0.1); border: 1px solid #dee2e6;'}">${pod.status}</td>
                         <td>${pod.nodename}</td>
+                        <td>${pod.age}</td>
                     `;
 
                     tableBody.appendChild(row);
@@ -602,6 +605,22 @@
                     row.style.display = ''; // 显示匹配的行
                 }
             });
+        }
+
+        function formatDuration(duration) {
+            const match = duration.match(/(\d+)h(\d+)m(\d+(?:\.\d*)?)s/);
+            if (!match) return duration; 
+
+            let hours = parseInt(match[1], 10);
+            let minutes = parseInt(match[2], 10);
+
+            if (hours >= 24) {
+                const days = Math.floor(hours / 24);
+                hours = hours % 24;
+                return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
+            }
+
+            return `${hours}h ${minutes}m`;
         }
 
 
