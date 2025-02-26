@@ -209,8 +209,53 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 		// 将 Pods 数据存储到自定义结构体
 		for _, p := range pods.Items {
 
+			status := p.Status.Phase
+
 			if string(p.Status.Phase) == "Running" {
 				//fmt.Print(p.Name)
+				podList = append(podList, PodStatus{
+					Name:        p.Name,
+					Namespace:   p.Namespace,
+					ReleaseName: p.Labels["app.kubernetes.io/instance"],
+					Status:      string(status),
+					NodeName:    p.Spec.NodeName,
+				})
+			} else if len(p.Status.ContainerStatuses) > 0 {
+
+				// 預設先使用外部狀態
+				podstatus := PodStatus{
+					Name:        p.Name,
+					Namespace:   p.Namespace,
+					ReleaseName: p.Labels["app.kubernetes.io/instance"],
+					Status:      string(status), // 这里直接取 Waiting.Reason
+					NodeName:    p.Spec.NodeName,
+				}
+
+				// 讀取每個 pods 的異常狀態,如果有異常就打印並立刻退出
+				for _, containerStatus := range p.Status.ContainerStatuses {
+					if containerStatus.State.Waiting != nil {
+						fmt.Printf("Pod: %s, Container: %s, Status: %s\n",
+							p.Name, containerStatus.Name, containerStatus.State.Waiting.Reason)
+
+						podstatus.Status = containerStatus.State.Waiting.Reason
+						break // 发现异常状态后，立即跳出循环
+					}
+
+					if containerStatus.State.Terminated != nil {
+						fmt.Printf("Pod: %s, Container: %s, Status: %s\n",
+							p.Name, containerStatus.Name, containerStatus.State.Terminated.Reason)
+
+						podstatus.Status = containerStatus.State.Terminated.Reason
+						break // 发现异常状态后，立即跳出循环
+					}
+
+				}
+
+				// 加入到 pods list
+				podList = append(podList, podstatus)
+
+			} else {
+
 				podList = append(podList, PodStatus{
 					Name:        p.Name,
 					Namespace:   p.Namespace,
@@ -218,32 +263,7 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 					Status:      string(p.Status.Phase),
 					NodeName:    p.Spec.NodeName,
 				})
-			} else {
 
-				//fmt.Print(p.Name)
-				if len(p.Status.ContainerStatuses) > 0 {
-
-					containerStatus := p.Status.ContainerStatuses[0]
-
-					if containerStatus.State.Waiting != nil {
-						podList = append(podList, PodStatus{
-							Name:        p.Name,
-							Namespace:   p.Namespace,
-							ReleaseName: p.Labels["app.kubernetes.io/instance"],
-							Status:      fmt.Sprintf("%s", p.Status.ContainerStatuses[0].State.Waiting.Reason),
-							NodeName:    p.Spec.NodeName,
-						})
-					} else {
-						podList = append(podList, PodStatus{
-							Name:        p.Name,
-							Namespace:   p.Namespace,
-							ReleaseName: p.Labels["app.kubernetes.io/instance"],
-							Status:      fmt.Sprintf("%s", "UNKNOWN"),
-							NodeName:    p.Spec.NodeName,
-						})
-					}
-
-				}
 			}
 
 		}
@@ -595,66 +615,64 @@ func GetReleaseLog(releaseName string, namespace string, logPath string, startTi
 
 	// 過濾與 Release 相關的 pods
 	for _, pod := range pods.Items {
-		if strings.Contains(pod.Name, releaseName) {
 
-			for _, container := range pod.Spec.Containers {
+		for _, container := range pod.Spec.Containers {
 
-				// 如果是 filebeat 容器跳過不讀取 log
-				targetPath := fmt.Sprintf(
-					"touch -t %s /tmp/start_time && "+ //設定開始時間
-						"touch -t %s /tmp/end_time && "+ //設定結束時間
-						//搜尋區間內檔案 (部分os 不支援日期查詢故使用此方法)
-						"find %s -type f -newer /tmp/start_time ! -newer /tmp/end_time | xargs tar -zcf /tmp/logs.tar.gz",
-					startTime, endTime, logPath)
+			// 如果是 filebeat 容器跳過不讀取 log
+			targetPath := fmt.Sprintf(
+				"touch -t %s /tmp/start_time && "+ //設定開始時間
+					"touch -t %s /tmp/end_time && "+ //設定結束時間
+					//搜尋區間內檔案 (部分os 不支援日期查詢故使用此方法)
+					"find %s -type f -newer /tmp/start_time ! -newer /tmp/end_time | xargs tar -zcf /tmp/logs.tar.gz",
+				startTime, endTime, logPath)
 
-				// 在 Pod 內部壓縮文件
-				cmdTar := exec.Command("/usr/local/bin/kubectl", "--kubeconfig=/tmp/config.yaml", "exec", "-c", container.Name, pod.Name, "-n", namespace, "--", "sh", "-c", targetPath)
+			// 在 Pod 內部壓縮文件
+			cmdTar := exec.Command("/usr/local/bin/kubectl", "--kubeconfig=/tmp/config.yaml", "exec", "-c", container.Name, pod.Name, "-n", namespace, "--", "sh", "-c", targetPath)
 
-				log.Printf(strings.Join(cmdTar.Args, " "))
-				//fmt.Print(targetPath)
+			log.Printf(strings.Join(cmdTar.Args, " "))
+			//fmt.Print(targetPath)
 
-				//fmt.Print(container.Name)
-				//cmdTar := exec.Command("/usr/local/bin/kubectl", "--kubeconfig=/tmp/config.yaml", "get", "pod")
+			//fmt.Print(container.Name)
+			//cmdTar := exec.Command("/usr/local/bin/kubectl", "--kubeconfig=/tmp/config.yaml", "get", "pod")
 
-				// 获取命令的标准输出和标准错误
-				output, err := cmdTar.CombinedOutput()
-				if err != nil {
-					log.Printf("无法执行命令: %v", err)
-					log.Printf("错误输出: %s", output)
-				}
-
-				// 打印命令输出
-				fmt.Println("命令输出: ")
-				fmt.Println(string(output))
-
-				// 複製文件壓縮至本地
-
-				cmdCp := exec.Command("/usr/local/bin/kubectl", "--kubeconfig=/tmp/config.yaml", "cp", "-c", container.Name, namespace+"/"+pod.Name+":"+"/tmp/logs.tar.gz", filepath.Join(collectPath, pod.Name+"_"+container.Name+".tar.gz"))
-
-				log.Printf(strings.Join(cmdCp.Args, ""))
-				output, err = cmdCp.CombinedOutput()
-				if err != nil {
-					log.Printf("无法执行命令: %v", err)
-					log.Printf("错误输出: %s", output)
-				}
-
-				// 打印命令输出
-				fmt.Println("命令输出: ")
-				fmt.Println(string(output))
-
-				rmlog := exec.Command("/usr/local/bin/kubectl", "--kubeconfig=/tmp/config.yaml", "exec", "-c", container.Name, pod.Name, "-n", namespace, "--", "sh", "-c", "rm /tmp/logs.tar.gz")
-				log.Printf(strings.Join(rmlog.Args, ""))
-				output, err = rmlog.CombinedOutput()
-				if err != nil {
-					log.Printf("无法执行命令: %v", err)
-					log.Printf("错误输出: %s", output)
-				}
-
-				log.Printf("日志已保存到: %s", filepath.Join(collectPath, pod.Name+".tar.gz"))
-
+			// 获取命令的标准输出和标准错误
+			output, err := cmdTar.CombinedOutput()
+			if err != nil {
+				log.Printf("无法执行命令: %v", err)
+				log.Printf("错误输出: %s", output)
 			}
 
+			// 打印命令输出
+			fmt.Println("命令输出: ")
+			fmt.Println(string(output))
+
+			// 複製文件壓縮至本地
+
+			cmdCp := exec.Command("/usr/local/bin/kubectl", "--kubeconfig=/tmp/config.yaml", "cp", "-c", container.Name, namespace+"/"+pod.Name+":"+"/tmp/logs.tar.gz", filepath.Join(collectPath, pod.Name+"_"+container.Name+".tar.gz"))
+
+			log.Printf(strings.Join(cmdCp.Args, ""))
+			output, err = cmdCp.CombinedOutput()
+			if err != nil {
+				log.Printf("无法执行命令: %v", err)
+				log.Printf("错误输出: %s", output)
+			}
+
+			// 打印命令输出
+			fmt.Println("命令输出: ")
+			fmt.Println(string(output))
+
+			rmlog := exec.Command("/usr/local/bin/kubectl", "--kubeconfig=/tmp/config.yaml", "exec", "-c", container.Name, pod.Name, "-n", namespace, "--", "sh", "-c", "rm /tmp/logs.tar.gz")
+			log.Printf(strings.Join(rmlog.Args, ""))
+			output, err = rmlog.CombinedOutput()
+			if err != nil {
+				log.Printf("无法执行命令: %v", err)
+				log.Printf("错误输出: %s", output)
+			}
+
+			log.Printf("日志已保存到: %s", filepath.Join(collectPath, pod.Name+".tar.gz"))
+
 		}
+
 	}
 
 	// 開始壓縮收集完成的資料夾

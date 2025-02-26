@@ -227,6 +227,7 @@ func main() {
 		}
 		// 202502180000
 		// 202503010000
+		// 202502230000
 
 		go utils.GetReleaseLog(req.ReleaseName, req.Namespace, "/var/log", req.StartTime, req.EndTime, config.K8sConfig)
 

@@ -580,6 +580,8 @@
                 const tableBody = document.getElementById('listPods');
                 tableBody.innerHTML = `<tr><td colspan="4">Error: ${error.message}</td></tr>`;
             }
+            // 讀取後過濾
+            filterPods()
         }
         listPods();
         setInterval(listPods, 5000);
