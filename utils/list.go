@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -40,12 +41,13 @@ type Release struct {
 
 // PodStatus 定义一个结构体用于存储 Pod 的信息
 type PodStatus struct {
-	Name        string `json:"name"`        // Pod 名称
-	Namespace   string `json:"namespace"`   // Pod 所属命名空间
-	ReleaseName string `json:"releasename"` // Pod 的 release 來源
-	Status      string `json:"status"`      // Pod 状态
-	NodeName    string `json:"nodename"`    // Pod 所在节点名称
-	Age         string `json:"age"`         // Pod 所在节点名称
+	Name         string `json:"name"`        // Pod 名称
+	Namespace    string `json:"namespace"`   // Pod 所属命名空间
+	ReleaseName  string `json:"releasename"` // Pod 的 release 來源
+	Status       string `json:"status"`      // Pod 状态
+	NodeName     string `json:"nodename"`    // Pod 所在节点名称
+	Age          string `json:"age"`         // Pod 所在节点名称
+	RestartCount int    `json:"restartcount"`
 }
 
 type HelmRepoPackage struct {
@@ -215,28 +217,35 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 
 			status := p.Status.Phase
 
+			totalRestarts := 0
+			for _, cs := range p.Status.ContainerStatuses {
+				totalRestarts += int(cs.RestartCount)
+			}
+
 			if string(p.Status.Phase) == "Running" {
 				//fmt.Print(p.Name)
 				now := time.Now()
 				podList = append(podList, PodStatus{
-					Name:        p.Name,
-					Namespace:   p.Namespace,
-					ReleaseName: p.Labels["app.kubernetes.io/instance"],
-					Status:      string(status),
-					NodeName:    p.Spec.NodeName,
-					Age:         now.Sub(p.CreationTimestamp.Time).String(),
+					Name:         p.Name,
+					Namespace:    p.Namespace,
+					ReleaseName:  p.Labels["app.kubernetes.io/instance"],
+					Status:       string(status),
+					NodeName:     p.Spec.NodeName,
+					Age:          now.Sub(p.CreationTimestamp.Time).String(),
+					RestartCount: totalRestarts,
 				})
 			} else if len(p.Status.ContainerStatuses) > 0 {
 
 				now := time.Now()
 				// 預設先使用外部狀態
 				podstatus := PodStatus{
-					Name:        p.Name,
-					Namespace:   p.Namespace,
-					ReleaseName: p.Labels["app.kubernetes.io/instance"],
-					Status:      string(status), // 这里直接取 Waiting.Reason
-					NodeName:    p.Spec.NodeName,
-					Age:         now.Sub(p.CreationTimestamp.Time).String(),
+					Name:         p.Name,
+					Namespace:    p.Namespace,
+					ReleaseName:  p.Labels["app.kubernetes.io/instance"],
+					Status:       string(status), // 这里直接取 Waiting.Reason
+					NodeName:     p.Spec.NodeName,
+					Age:          now.Sub(p.CreationTimestamp.Time).String(),
+					RestartCount: totalRestarts,
 				}
 
 				// 讀取每個 pods 的異常狀態,如果有異常就打印並立刻退出
@@ -266,12 +275,13 @@ func ListPods(kubeconfig string) ([]PodStatus, error) {
 
 				now := time.Now()
 				podList = append(podList, PodStatus{
-					Name:        p.Name,
-					Namespace:   p.Namespace,
-					ReleaseName: p.Labels["app.kubernetes.io/instance"],
-					Status:      string(p.Status.Phase),
-					NodeName:    p.Spec.NodeName,
-					Age:         now.Sub(p.CreationTimestamp.Time).String(),
+					Name:         p.Name,
+					Namespace:    p.Namespace,
+					ReleaseName:  p.Labels["app.kubernetes.io/instance"],
+					Status:       string(p.Status.Phase),
+					NodeName:     p.Spec.NodeName,
+					Age:          now.Sub(p.CreationTimestamp.Time).String(),
+					RestartCount: totalRestarts,
 				})
 
 			}
@@ -650,6 +660,22 @@ func GetReleaseLog(releaseName string, namespace string, logPath string, startTi
 			if err != nil {
 				log.Printf("无法执行命令: %v", err)
 				log.Printf("错误输出: %s", output)
+
+				streamlogs := exec.Command("/usr/local/bin/kubectl", "--kubeconfig=/tmp/config.yaml", "logs", pod.Name, "-c", container.Name, "-n", namespace)
+
+				log.Printf(strings.Join(streamlogs.Args, " "))
+				output, err = streamlogs.CombinedOutput()
+
+				if err != nil {
+					fmt.Println(err.Error())
+					fmt.Println(string(output))
+				} else {
+					// 将输出写入文件
+					err = ioutil.WriteFile(filepath.Join(collectPath, pod.Name+"_"+container.Name+".log"), output, 0644)
+					if err != nil {
+						fmt.Println("写入日志文件失败:", err)
+					}
+				}
 			}
 
 			// 打印命令输出

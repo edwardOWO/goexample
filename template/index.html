@@ -158,8 +158,9 @@
                                     <th>Namespace</th>
                                     <th>ReleaseName</th>
                                     <th>Status</th>
-                                    <th>Node Name</th>
+                                    <th>RestartCount</th>
                                     <th>Age</th>
+                                    <th>Node Name</th>
                                 </tr>
                             </thead>
                             <tbody id="listPods"></tbody>
@@ -573,8 +574,9 @@
                         <td>${pod.namespace}</td>
                         <td>${pod.releasename}</td>
                         <td class="${pod.status.trim() === 'Running' ? 'table-success' : 'table-danger'}" style="${pod.status.trim() === 'Running' ? 'background-color: rgba(40, 167, 69, 0.1); border: 1px solid #dee2e6;' : 'background-color: rgba(220, 53, 69, 0.1); border: 1px solid #dee2e6;'}">${pod.status}</td>
-                        <td>${pod.nodename}</td>
+                        <td>${pod.restartcount}</td>
                         <td>${pod.age}</td>
+                        <td>${pod.nodename}</td>
                     `;
 
                     tableBody.appendChild(row);
@@ -613,14 +615,16 @@
 
             let hours = parseInt(match[1], 10);
             let minutes = parseInt(match[2], 10);
+            let seconds = Math.floor(parseFloat(match[2]));  // 取整秒数
+            
 
             if (hours >= 24) {
                 const days = Math.floor(hours / 24);
                 hours = hours % 24;
-                return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
+                return hours > 0 ? `${days}d ${hours}h ${minutes}m ${seconds}s` : `${days}d ${minutes}m ${seconds}s`;
             }
 
-            return `${hours}h ${minutes}m`;
+            return `${hours}h ${minutes}m ${seconds}s`;
         }
 
 
